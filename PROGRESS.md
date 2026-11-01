@@ -20,8 +20,8 @@
 | **Phase 7** | Daily AMFI Open NAV & Scheme Master Ingestion Engine | **COMPLETED** | Verified via `test_amfi_nav.ts` (Passed) |
 | **Phase 8** | Client Portfolio, CAS Parser & Capital Gains Engine (Budget 2024) | **COMPLETED** | Verified via `test_phase8_portfolio_tax.ts` (Passed) |
 | **Phase 9** | MFD Proposal Basket & Investment Cart Link Engine | **COMPLETED** | Verified via `test_phase9_proposal_cart.ts` (Passed) |
-| **Phase 10** | Modern Frontend Web UI & Distributor Workspace | **NEXT UP** | Responsive Advisor Workspace & Investor Magic Cart |
-| **Phase 11** | MF Research & Rolling Returns Engine | **DEFERRED** | Deferred to end per user instruction |
+| **Phase 10** | Modern Frontend Web UI & Tanashvi Brand Experience | **COMPLETED** | Verified via Vite build (Lotus logo, theme, calculators, portfolio tax, cart) |
+| **Phase 11** | MF Research & Analytics Engine (AdvisorKhoj Parity) | **COMPLETED** | Verified via `test_phase11_research.ts` (Passed 100%) |
 | **Phase 12** | Live BSE Sandbox Integration (Post Static IP Whitelisting) | **PENDING** | Awaiting BSE Exchange static IP whitelist approval |
 
 ---
@@ -202,6 +202,61 @@
   * `GET /api/v1/proposals/:id`
 * **Automated Phase 9 Testbench:**
   * File: [`src/tests/test_phase9_proposal_cart.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/tests/test_phase9_proposal_cart.ts)
+  * Status: **PASSED (100% SUCCESS)**.
+
+---
+
+### Phase 10: Modern Frontend Web UI & Tanashvi Brand Experience
+* **Tanashvi Brand Integration:**
+  * Imported stylized Lotus (Padma) emblem from `logo/tanashvi_logo_ver1.jpeg`.
+  * Created [`TanashviLogo.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/TanashviLogo.tsx) with `header`, `hero`, and `compact` variants.
+  * Embedded corporate motto **"भवतः हिताय"** (*"For Your Welfare"*) and official website link `https://www.tanashvi.in`.
+  * Palette: Bespoke Navy (`#0a192f`) & Refined Gold (`#c5a059`) with `Libre Baskerville` and `Inter` typography.
+* **Workspace Modules:**
+  * Interactive tabs for Order Terminal, UCC Onboarding, Mandates, Order Book, Sub-Distributor Hierarchy, Financial Calculators, Portfolio & Tax, and Proposal Cart.
+  * Verified production build via Vite (`npm run build`).
+
+---
+
+### Phase 11: Mutual Fund Research & Analytics Engine (AdvisorKhoj Parity)
+* **Rolling Returns vs Benchmark Engine:**
+  * File: [`src/services/rollingReturnsService.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/services/rollingReturnsService.ts)
+  * Calculates rolling CAGR returns over 1Y, 3Y, 5Y, and 7Y investment horizons.
+  * Computes Average, Median, Min/Max range, and return probability distribution:
+    - Negative returns ($<0\%$)
+    - Below FD ($0\% - 8\%$)
+    - Moderate equity ($8\% - 12\%$)
+    - Healthy wealth creation ($12\% - 15\%$)
+    - Alpha compounding ($>15\%$)
+  * Synchronized day-by-day comparison with **NIFTY 50 TRI** benchmark.
+* **Risk Ratios & Volatility Metrics Engine:**
+  * File: [`src/services/riskRatiosService.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/services/riskRatiosService.ts)
+  * Enforces standard financial formulas:
+    - Annualized Standard Deviation ($\sigma = \sigma_{\text{daily}} \sqrt{252}$)
+    - Beta ($\beta = \text{Cov}(r_s, r_b) / \text{Var}(r_b)$)
+    - Jensen's Alpha ($\alpha = (R_s - R_f) - \beta (R_b - R_f)$) with 6.50% RBI T-Bill rate
+    - Sharpe Ratio ($S = (R_s - R_f) / \sigma$)
+    - Sortino Ratio (downside risk deviation)
+    - Correlation & R-Squared ($R^2$)
+* **Portfolio Overlap Analysis Engine:**
+  * File: [`src/services/portfolioOverlapService.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/services/portfolioOverlapService.ts)
+  * Exact stock-by-stock overlap: $\sum \min(W_{A,k}, W_{B,k})$.
+  * Common shared holdings table and unique stocks breakdown to prevent over-diversification.
+* **Multi-Scheme 4-Way Comparison Matrix:**
+  * Side-by-side comparison across AUM, TER, fund managers, trailing returns (1M, 3M, 6M, 1Y, 3Y, 5Y), risk ratios, top 5 holdings, and sector allocations.
+* **Database Schema Migration:**
+  * File: [`005_phase11_research_analytics.sql`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/database/migrations/005_phase11_research_analytics.sql)
+* **REST Endpoints:** Mounted in [`src/routes/researchRoutes.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/routes/researchRoutes.ts):
+  * `GET /api/v1/research/schemes`
+  * `GET /api/v1/research/rolling-returns?schemeCode=...&years=...`
+  * `GET /api/v1/research/risk-ratios?schemeCode=...&periodYears=...`
+  * `POST /api/v1/research/compare`
+  * `POST /api/v1/research/overlap`
+* **Frontend Research View:**
+  * File: [`src/components/ResearchView.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/ResearchView.tsx)
+  * Added **MF Research** tab in `Header.tsx` and `App.tsx`.
+* **Automated Phase 11 Testbench:**
+  * File: [`src/tests/test_phase11_research.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/tests/test_phase11_research.ts)
   * Status: **PASSED (100% SUCCESS)**.
 
 ---

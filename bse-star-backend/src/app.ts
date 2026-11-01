@@ -18,6 +18,10 @@ import mandateRoutes from './routes/mandateRoutes.js';
 import webhookRoutes from './routes/webhookRoutes.js';
 import calculatorRoutes from './routes/calculatorRoutes.js';
 import schemeRoutes from './routes/schemeRoutes.js';
+import portfolioRoutes from './routes/portfolioRoutes.js';
+import taxRoutes from './routes/taxRoutes.js';
+import proposalRoutes from './routes/proposalRoutes.js';
+import researchRoutes from './routes/researchRoutes.js';
 import { globalErrorHandler } from './middleware/errorHandler.js';
 import { BseGatewayService } from './services/bseGatewayService.js';
 
@@ -51,6 +55,10 @@ export function createApp(): Express {
   app.use('/api/v1/webhooks', webhookRoutes);
   app.use('/api/v1/calculators', calculatorRoutes);
   app.use('/api/v1/schemes', schemeRoutes);
+  app.use('/api/v1/portfolio', portfolioRoutes);
+  app.use('/api/v1/tax', taxRoutes);
+  app.use('/api/v1/proposals', proposalRoutes);
+  app.use('/api/v1/research', researchRoutes);
 
   // 404 Not Found Handler
   app.use((req: Request, res: Response) => {

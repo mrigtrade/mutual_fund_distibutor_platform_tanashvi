@@ -24,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   const navItems = [
     { id: 'orders', label: 'Order Engine' },
     { id: 'proposals', label: 'Proposal Cart' },
+    { id: 'research', label: 'MF Research' },
     { id: 'calculators', label: 'Calculators' },
     { id: 'portfolio', label: 'Portfolio & Tax' },
     { id: 'schemes', label: 'Scheme Master' },

@@ -40,6 +40,7 @@ import { DevTestbench } from './components/DevTestbench';
 import { CalculatorsView } from './components/CalculatorsView';
 import { PortfolioTaxView } from './components/PortfolioTaxView';
 import { ProposalCartView } from './components/ProposalCartView';
+import { ResearchView } from './components/ResearchView';
 import { CheckCircle2, Shield, Activity, RefreshCw } from 'lucide-react';
 
 export default function App() {
@@ -253,6 +254,7 @@ export default function App() {
         )}
 
         {currentTab === 'proposals' && <ProposalCartView />}
+        {currentTab === 'research' && <ResearchView />}
         {currentTab === 'calculators' && <CalculatorsView />}
         {currentTab === 'portfolio' && <PortfolioTaxView />}
 
