@@ -326,6 +326,7 @@
 * **Website:** https://www.tanashvi.in
 * **BSE Member Code:** `714114`
 * **AMFI ARN:** `ARN-347849`
+* **Live Web Application (Vercel):** `https://mutual-fund-distibutor-platform-tan.vercel.app/`
 * **GitHub Repository:** `https://github.com/mrigtrade/mutual_fund_distibutor_platform_tanashvi.git`
 * **Target Live Gateway (Future):** `https://v2.bsestarmf.in/api`
 * **Target QA Gateway:** `https://qa.starmfv2.remiges.tech/api`

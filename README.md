@@ -6,6 +6,7 @@ A proprietary, high-performance, multi-tenant B2B mutual fund transaction, advis
 * **Corporate Motto / Tagline:** **भवतः हिताय** (*"Bhavatah Hitaya"* — *"For Your Welfare"*)
 * **Official Website:** [https://www.tanashvi.in/](https://www.tanashvi.in/)
 * **AMFI Registration:** `ARN-347849` | **BSE Member Code:** `714114`
+* **Live Web Application (Vercel):** [https://mutual-fund-distibutor-platform-tan.vercel.app/](https://mutual-fund-distibutor-platform-tan.vercel.app/)
 * **GitHub Repository:** [https://github.com/mrigtrade/mutual_fund_distibutor_platform_tanashvi.git](https://github.com/mrigtrade/mutual_fund_distibutor_platform_tanashvi.git)
 
 ---
@@ -304,7 +305,7 @@ All communication with BSE StAR MF v2 endpoints strictly adheres to the **JOSE (
 * **Category 4: Tanashvi Promoters & Super-Admin:** Executive portal for Tanashvi Fintech Private Limited (Member `714114`, ARN-347849) tracking 42 subscribed MFDs, ₹148.65 Cr platform AUM, 24h BSE transaction velocity, and SEBI Regulation 25 audit trails.
 * **Client-Side PDF & Formatted Excel (.xls / .csv) Engine:** 1-click export of branded portfolio valuations, capital gains tax lots, financial goal schedules, fund comparison matrices, and investor proposal dossiers.
 
-### Phase 13: AUM / SIP / STP / SWP Analytics & Underlying Stock Look-Through Breakdown
+### Phase 13: AUM / SIP / STP / SWP Analytics, Underlying Stock Look-Through & Dynamic Fund Comparison
 * **AUM & Systematic Book Analytics (`AumSystematicAnalyticsView.tsx`):**
   * Dedicated dashboard for Category 1, 2, and 4 users with Total AUM, Monthly SIP Book, Active STP & SWP Books, and 13-Month Persistence tracking.
   * Breakdown charts for Asset Class distribution, AMC concentration, and monthly SIP/STP debit calendar.
@@ -313,6 +314,11 @@ All communication with BSE StAR MF v2 endpoints strictly adheres to the **JOSE (
   * Complete look-through company stock holdings (ISIN, Company, Sector, Market Cap, Weight %, Rupee Value, Contributing Funds) available in Category 1 & 2 (`PortfolioTaxView.tsx`) and Category 3 (`InvestorPortalView.tsx`).
   * Sector exposure bars and Market Capitalization split (Large Cap, Mid Cap, Small Cap).
   * SEBI AMC monthly disclosure compliance mapping alongside BSE StAR MF execution folios.
+* **Dynamic Multi-Fund Comparison Matrix Enhancement (`ResearchView.tsx`):**
+  * Full dynamic selection, in-column swap, and deletion controls across 14 flagship mutual fund schemes (2 to 5 funds supported).
+  * 1-Click peer group presets: *Flagship Mix*, *Large Cap Bluechips*, *Mid & Small Cap Alpha*, and *Flexi & Multi Cap*.
+  * Expanded analytical parameters: Overview, Trailing Returns (1M, 3M, 6M, 1Y, 3Y, 5Y, Inception), 3Y Risk Ratios (Beta, Sharpe, Jensen's Alpha, Sortino, SD, $R^2$), and Top 3 Look-Through Holdings.
+  * Branded client-side PDF and Excel (.xls) dynamic report downloads.
 
 ---
 
