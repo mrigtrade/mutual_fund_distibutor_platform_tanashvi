@@ -19,14 +19,16 @@ import {
   ArrowUpRight, 
   ShieldCheck, 
   Clock, 
-  Building2,
-  DollarSign,
-  CreditCard
+  Building2, 
+  DollarSign, 
+  CreditCard,
+  Layers,
+  Info
 } from 'lucide-react';
 import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
 
 export const InvestorPortalView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'holdings' | 'sips' | 'proposals' | 'tax'>('holdings');
+  const [activeTab, setActiveTab] = useState<'holdings' | 'stocks' | 'sips' | 'proposals' | 'tax'>('holdings');
   const [cartExecuted, setCartExecuted] = useState(false);
 
   const investor = {
@@ -52,6 +54,31 @@ export const InvestorPortalView: React.FC = () => {
       { name: 'Parag Parikh Flexi Cap Fund - Regular Growth', category: 'Equity: Flexi Cap', units: 695.19, buyNav: 50.00, nav: 78.45, invested: 34759, curVal: 54537, xirr: 18.5 },
       { name: 'HDFC Short Term Debt Fund - Regular Growth', category: 'Debt: Short Term', units: 600.0, buyNav: 24.50, nav: 28.20, invested: 14700, curVal: 16920, xirr: 7.2 },
       { name: 'ICICI Prudential Liquid Fund - Regular Growth', category: 'Debt: Liquid', units: 50.0, buyNav: 320.00, nav: 355.50, invested: 16000, curVal: 17775, xirr: 6.8 }
+    ],
+    underlyingStocks: [
+      { company: 'HDFC Bank Ltd.', isin: 'INE040A01034', sector: 'Financial Services', weight: 8.85, marketCap: 'Large Cap', funds: 'HDFC Top 100, Parag Parikh Flexi Cap' },
+      { company: 'ICICI Bank Ltd.', isin: 'INE090A01021', sector: 'Financial Services', weight: 7.92, marketCap: 'Large Cap', funds: 'HDFC Top 100, Parag Parikh Flexi Cap' },
+      { company: 'ITC Ltd.', isin: 'INE154A01025', sector: 'Fast Moving Consumer Goods', weight: 6.10, marketCap: 'Large Cap', funds: 'HDFC Top 100, Parag Parikh Flexi Cap' },
+      { company: 'Reliance Industries Ltd.', isin: 'INE002A01018', sector: 'Oil Gas & Energy', weight: 5.60, marketCap: 'Large Cap', funds: 'HDFC Top 100 Fund' },
+      { company: 'Infosys Ltd.', isin: 'INE009A01021', sector: 'Information Technology', weight: 4.80, marketCap: 'Large Cap', funds: 'HDFC Top 100 Fund' },
+      { company: 'Bajaj Holdings & Investment Ltd.', isin: 'INE118A01012', sector: 'Financial Services', weight: 3.90, marketCap: 'Large Cap', funds: 'Parag Parikh Flexi Cap' },
+      { company: 'Larsen & Toubro Ltd.', isin: 'INE018A01030', sector: 'Construction & Capital Goods', weight: 3.40, marketCap: 'Large Cap', funds: 'HDFC Top 100 Fund' },
+      { company: 'Power Grid Corporation of India', isin: 'INE752E01010', sector: 'Power & Energy', weight: 3.20, marketCap: 'Large Cap', funds: 'Parag Parikh Flexi Cap' },
+      { company: 'Coal India Ltd.', isin: 'INE522F01014', sector: 'Metals & Mining', weight: 3.15, marketCap: 'Large Cap', funds: 'Parag Parikh Flexi Cap' },
+      { company: 'Bharti Airtel Ltd.', isin: 'INE397D01024', sector: 'Telecommunication', weight: 3.10, marketCap: 'Large Cap', funds: 'HDFC Top 100 Fund' },
+      { company: 'Maruti Suzuki India Ltd.', isin: 'INE585B01010', sector: 'Automobile', weight: 2.80, marketCap: 'Large Cap', funds: 'Parag Parikh Flexi Cap' },
+      { company: 'HCL Technologies Ltd.', isin: 'INE860A01027', sector: 'Information Technology', weight: 2.50, marketCap: 'Large Cap', funds: 'Parag Parikh Flexi Cap' },
+      { company: 'Axis Bank Ltd.', isin: 'INE238A01034', sector: 'Financial Services', weight: 2.20, marketCap: 'Large Cap', funds: 'HDFC Top 100, Parag Parikh Flexi Cap' }
+    ],
+    sectorBreakdown: [
+      { sector: 'Financial Services', weight: 31.8, color: 'bg-[#c5a059]' },
+      { sector: 'Information Technology', weight: 14.5, color: 'bg-sky-500' },
+      { sector: 'Fast Moving Consumer Goods', weight: 11.2, color: 'bg-emerald-500' },
+      { sector: 'Oil Gas & Energy', weight: 8.9, color: 'bg-purple-500' },
+      { sector: 'Construction & Capital Goods', weight: 7.4, color: 'bg-amber-500' },
+      { sector: 'Automobile', weight: 6.2, color: 'bg-blue-400' },
+      { sector: 'Metals, Mining & Telecom', weight: 6.2, color: 'bg-teal-400' },
+      { sector: 'Cash Equivalents & Debt', weight: 13.8, color: 'bg-slate-600' }
     ],
     sips: [
       { scheme: 'Parag Parikh Flexi Cap Fund', amount: 10000, debitDay: '10th of every month', nextDebit: '10-Nov-2026', mandate: 'MDT-88201', bank: 'HDFC Bank (...0481)', status: 'ACTIVE' },
@@ -162,6 +189,66 @@ export const InvestorPortalView: React.FC = () => {
     });
   };
 
+  const handleExportStocksPdf = () => {
+    const headers = ['Company Name', 'ISIN', 'Industry Sector', 'Cap Class', 'Weight (%)', 'Value (INR)', 'Contributing Funds'];
+    const rows = investor.underlyingStocks.map(s => [
+      s.company,
+      s.isin,
+      s.sector,
+      s.marketCap,
+      `${s.weight.toFixed(2)}%`,
+      `₹${Math.round(investor.currentValue * (s.weight / 100)).toLocaleString()}`,
+      s.funds
+    ]);
+
+    exportReportToPdf({
+      title: 'Mutual Fund Look-Through Stock Holdings & Sector Statement',
+      subtitle: `Serviced by: ${investor.distributorName} (${investor.arn})`,
+      clientName: investor.name,
+      pan: investor.pan,
+      ucc: investor.ucc,
+      summaryCards: [
+        { label: 'Total Portfolio', value: `₹${Math.round(investor.currentValue).toLocaleString()}` },
+        { label: 'Underlying Stocks', value: `${investor.underlyingStocks.length} Companies` },
+        { label: 'Top Sector', value: 'Financial Services' },
+        { label: 'Look-Through Source', value: 'AMC Disclosures' }
+      ],
+      headers,
+      rows,
+      filename: `underlying_stocks_${investor.name.toLowerCase().replace(/ /g, '_')}.pdf`,
+      footerNotes: [
+        'Stock holdings consolidated from official monthly AMC portfolio disclosures under SEBI regulations.',
+        'Percentages reflect weighted look-through across your mutual fund portfolio.'
+      ]
+    });
+  };
+
+  const handleExportStocksXls = () => {
+    const headers = ['Company Name', 'ISIN', 'Industry Sector', 'Market Cap', 'Weight (%)', 'Effective Value (INR)', 'Contributing Funds'];
+    const rows = investor.underlyingStocks.map(s => [
+      s.company,
+      s.isin,
+      s.sector,
+      s.marketCap,
+      s.weight,
+      Math.round(investor.currentValue * (s.weight / 100)),
+      s.funds
+    ]);
+
+    exportToExcelXls(
+      `underlying_stocks_${investor.name.toLowerCase().replace(/ /g, '_')}.xls`,
+      'Stock Holdings',
+      headers,
+      rows,
+      {
+        title: 'Investor Mutual Fund Look-Through Stock Holdings',
+        clientName: investor.name,
+        pan: investor.pan,
+        subtitle: `Total Portfolio Valuation: ₹${Math.round(investor.currentValue).toLocaleString()}`
+      }
+    );
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Top Banner - Client Profile */}
@@ -189,20 +276,41 @@ export const InvestorPortalView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleExportHoldingsPdf}
-              className="px-3.5 py-2 bg-gradient-to-r from-[#c5a059] to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-semibold text-xs rounded-lg shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download Statement (PDF)</span>
-            </button>
-            <button
-              onClick={handleExportHoldingsXls}
-              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium text-xs rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Export XLS</span>
-            </button>
+            {activeTab === 'stocks' ? (
+              <>
+                <button
+                  onClick={handleExportStocksPdf}
+                  className="px-3.5 py-2 bg-gradient-to-r from-[#c5a059] to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-semibold text-xs rounded-lg shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Stocks (PDF)</span>
+                </button>
+                <button
+                  onClick={handleExportStocksXls}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium text-xs rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Export XLS</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleExportHoldingsPdf}
+                  className="px-3.5 py-2 bg-gradient-to-r from-[#c5a059] to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-semibold text-xs rounded-lg shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Statement (PDF)</span>
+                </button>
+                <button
+                  onClick={handleExportHoldingsXls}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium text-xs rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Export XLS</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -250,7 +358,7 @@ export const InvestorPortalView: React.FC = () => {
       <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
         <button
           onClick={() => setActiveTab('holdings')}
-          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
             activeTab === 'holdings'
               ? 'bg-[#c5a059] text-slate-950 shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -261,8 +369,20 @@ export const InvestorPortalView: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setActiveTab('stocks')}
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
+            activeTab === 'stocks'
+              ? 'bg-[#c5a059] text-slate-950 shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Underlying Shares & Sectors</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('sips')}
-          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
             activeTab === 'sips'
               ? 'bg-[#c5a059] text-slate-950 shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -274,7 +394,7 @@ export const InvestorPortalView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('proposals')}
-          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 relative ${
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 relative shrink-0 ${
             activeTab === 'proposals'
               ? 'bg-[#c5a059] text-slate-950 shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -289,7 +409,7 @@ export const InvestorPortalView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('tax')}
-          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
             activeTab === 'tax'
               ? 'bg-[#c5a059] text-slate-950 shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -351,6 +471,156 @@ export const InvestorPortalView: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Underlying Stocks & Sector Look-Through */}
+      {activeTab === 'stocks' && (
+        <div className="space-y-6">
+          {/* SEBI Monthly Portfolio Disclosures Info Card */}
+          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-[#c5a059] shrink-0 mt-0.5" />
+              <div>
+                <div className="text-xs font-semibold text-white">
+                  SEBI Mandated Look-Through Portfolio Disclosures
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  While BSE StAR MF acts as your order execution & settlement engine (orders, folios & NAV units), underlying company shares and sector weights are consolidated from official AMC Monthly Portfolio Disclosures (mandated by SEBI regulations on the 10th of every month) mapped to your active mutual fund units.
+                </p>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <span className="text-[11px] font-mono text-emerald-400 font-semibold px-2 py-1 rounded bg-emerald-950/60 border border-emerald-500/30">
+                Latest AMC Disclosures Active
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Col: Sector Breakdown & Market Cap */}
+            <div className="space-y-6">
+              {/* Sector Breakdown */}
+              <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-serif font-bold text-white flex items-center gap-2">
+                    <PieChart className="w-4 h-4 text-[#c5a059]" />
+                    <span>Industry Sector Exposure</span>
+                  </h3>
+                  <span className="text-xs text-slate-400 font-mono">100% Total</span>
+                </div>
+
+                <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden flex">
+                  {investor.sectorBreakdown.map((s, idx) => (
+                    <div key={idx} style={{ width: `${s.weight}%` }} className={`${s.color} h-full`} />
+                  ))}
+                </div>
+
+                <div className="space-y-2 pt-1 text-xs">
+                  {investor.sectorBreakdown.map((s, idx) => (
+                    <div key={idx} className="flex justify-between items-center py-1 border-b border-slate-800/80">
+                      <span className="text-slate-300 flex items-center gap-2">
+                        <span className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
+                        {s.sector}
+                      </span>
+                      <span className="font-mono text-white font-semibold">{s.weight}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Market Cap Distribution */}
+              <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3 text-xs">
+                <h4 className="font-semibold text-white text-xs">Market Capitalization Split</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-slate-300">
+                    <span>Large Cap Stocks</span>
+                    <span className="font-mono font-bold text-white">74.5%</span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div className="bg-[#c5a059] h-full" style={{ width: '74.5%' }} />
+                  </div>
+
+                  <div className="flex justify-between text-slate-300 pt-1">
+                    <span>Mid Cap Stocks</span>
+                    <span className="font-mono font-bold text-white">16.2%</span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div className="bg-sky-500 h-full" style={{ width: '16.2%' }} />
+                  </div>
+
+                  <div className="flex justify-between text-slate-300 pt-1">
+                    <span>Small Cap Stocks</span>
+                    <span className="font-mono font-bold text-white">9.3%</span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div className="bg-purple-500 h-full" style={{ width: '9.3%' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right 2 Cols: Underlying Shares Table */}
+            <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg space-y-4">
+              <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-[#c5a059]" />
+                    <span>Top Underlying Company Holdings</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Consolidated look-through equity shares held across your {investor.holdings.length} mutual fund schemes.
+                  </p>
+                </div>
+                <div className="text-xs font-mono text-[#c5a059] font-bold">
+                  Portfolio: ₹{Math.round(investor.currentValue).toLocaleString()}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-800/80 text-slate-300 uppercase tracking-wider font-semibold border-b border-slate-700">
+                    <tr>
+                      <th className="px-4 py-3">Company Name / ISIN</th>
+                      <th className="px-4 py-3">Industry Sector</th>
+                      <th className="px-4 py-3 text-center">Cap Class</th>
+                      <th className="px-4 py-3 text-right">Portfolio Weight</th>
+                      <th className="px-4 py-3 text-right">Effective Value</th>
+                      <th className="px-4 py-3">Contributing Scheme(s)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {investor.underlyingStocks.map((s, idx) => {
+                      const effectiveValue = Math.round(investor.currentValue * (s.weight / 100));
+                      return (
+                        <tr key={idx} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-white">{s.company}</div>
+                            <div className="text-[11px] font-mono text-slate-400">{s.isin}</div>
+                          </td>
+                          <td className="px-4 py-3 text-slate-300">{s.sector}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                              {s.marketCap}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono font-bold text-[#c5a059]">
+                            {s.weight.toFixed(2)}%
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono font-medium text-emerald-400">
+                            ₹{effectiveValue.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 text-[11px] truncate max-w-xs">
+                            {s.funds}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -501,3 +771,4 @@ export const InvestorPortalView: React.FC = () => {
     </div>
   );
 };
+

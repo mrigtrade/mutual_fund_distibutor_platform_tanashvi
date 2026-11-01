@@ -33,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
 
     if (currentSession.role === 'MFD_STANDALONE') {
       return [
+        { id: 'aum_analytics', label: 'AUM & Systematic' },
         { id: 'orders', label: 'Order Engine' },
         { id: 'proposals', label: 'Proposal Cart' },
         { id: 'research', label: 'MF Research' },
@@ -48,6 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
 
     if (currentSession.role === 'SUB_DISTRIBUTOR') {
       return [
+        { id: 'aum_analytics', label: 'AUM & Systematic' },
         { id: 'orders', label: 'Order Engine' },
         { id: 'proposals', label: 'Proposal Cart' },
         { id: 'research', label: 'MF Research' },
@@ -62,6 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
     // Default for PLATFORM_SUPER_ADMIN & MASTER_MFD (Tanashvi HQ)
     return [
       { id: 'promoter_hq', label: 'Promoter HQ' },
+      { id: 'aum_analytics', label: 'AUM & Systematic' },
       { id: 'orders', label: 'Order Engine' },
       { id: 'proposals', label: 'Proposal Cart' },
       { id: 'research', label: 'MF Research' },

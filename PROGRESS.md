@@ -291,6 +291,28 @@
 
 ---
 
+### Phase 13: AUM / SIP / STP / SWP Systematic Analytics & Underlying Stock Look-Through Breakdown
+* **AUM & Systematic Book Analytics Component (`AumSystematicAnalyticsView.tsx`):**
+  * File: [`src/components/AumSystematicAnalyticsView.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/AumSystematicAnalyticsView.tsx)
+  * Supported roles: **Category 1 (Standalone MFD)**, **Category 2 (Network MFD with Sub-Brokers)**, and **Category 4 (Tanashvi Promoters & Super-Admin)**.
+  * Real-time metrics: Total AUM, Monthly SIP Book, Active STP Book, Active SWP Book, and 13-Month Persistence rate (e.g. 88.4% to 92.4%).
+  * Visual intelligence:
+    * **Asset Class Breakdown:** Equity, Debt, Hybrid, Liquid/Arbitrage split.
+    * **AMC Concentration:** Top fund houses (HDFC, ICICI Prudential, Parag Parikh, SBI, Nippon India).
+    * **Systematic Debit Calendar:** Cashflow volumes scheduled across 1st, 5th, 10th, 15th, 20th, and 25th debit days.
+  * Searchable & filterable Systematic Ledger (`SIP`, `STP`, `SWP`, `ACTIVE`, `PAUSED`, `COMPLETED`) with direct PDF and Excel (.xls) export.
+* **Underlying Stock & Sector Look-Through Breakdown:**
+  * Supported roles: **Category 1 (Standalone MFD)**, **Category 2 (Network MFD)** in `PortfolioTaxView.tsx`, and **Category 3 (End Investor)** in `InvestorPortalView.tsx`.
+  * **Stock-Level Look-Through Table:** Displays underlying company name, ISIN, industry sector, market capitalization class (Large/Mid/Small Cap), effective percentage weight, equivalent Rupee valuation, and contributing schemes.
+  * **Industry Sector Exposure:** Interactive progress bar and list breakdown (Financial Services 31.8%, Information Technology 14.5%, FMCG 11.2%, Energy 8.9%, Capital Goods 7.4%, Automobile 6.2%, etc.).
+  * **Market Cap Distribution:** Visual distribution split (Large Cap 74.5%, Mid Cap 16.2%, Small Cap 9.3%).
+  * **SEBI Compliance Architecture Notice:** Clearly clarifies the separation of concerns:
+    * *BSE StAR MF:* Order routing, client UCC, payment collection, and folio unit settlement.
+    * *AMC Monthly Disclosures:* Stock holdings and company weights sourced from SEBI-mandated monthly disclosures (published on the 10th of every month) mapped to active folio units.
+  * Branded PDF (`underlying_stocks_<client>.pdf`) and Excel (`underlying_stocks_<client>.xls`) exports.
+
+---
+
 ## 📌 Quick Context & Key Credentials Reference
 
 * **Entity:** Tanashvi Fintech Private Limited

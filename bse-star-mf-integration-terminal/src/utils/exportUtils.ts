@@ -283,3 +283,4 @@ export function exportReportToPdf(options: PdfReportOptions) {
   const filename = options.filename || `${options.title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`;
   doc.save(filename);
 }
+

@@ -304,6 +304,16 @@ All communication with BSE StAR MF v2 endpoints strictly adheres to the **JOSE (
 * **Category 4: Tanashvi Promoters & Super-Admin:** Executive portal for Tanashvi Fintech Private Limited (Member `714114`, ARN-347849) tracking 42 subscribed MFDs, ₹148.65 Cr platform AUM, 24h BSE transaction velocity, and SEBI Regulation 25 audit trails.
 * **Client-Side PDF & Formatted Excel (.xls / .csv) Engine:** 1-click export of branded portfolio valuations, capital gains tax lots, financial goal schedules, fund comparison matrices, and investor proposal dossiers.
 
+### Phase 13: AUM / SIP / STP / SWP Analytics & Underlying Stock Look-Through Breakdown
+* **AUM & Systematic Book Analytics (`AumSystematicAnalyticsView.tsx`):**
+  * Dedicated dashboard for Category 1, 2, and 4 users with Total AUM, Monthly SIP Book, Active STP & SWP Books, and 13-Month Persistence tracking.
+  * Breakdown charts for Asset Class distribution, AMC concentration, and monthly SIP/STP debit calendar.
+  * Filterable systematic ledger with direct PDF and Excel (.xls) statement export.
+* **Underlying Stock & Sector Look-Through Breakdown:**
+  * Complete look-through company stock holdings (ISIN, Company, Sector, Market Cap, Weight %, Rupee Value, Contributing Funds) available in Category 1 & 2 (`PortfolioTaxView.tsx`) and Category 3 (`InvestorPortalView.tsx`).
+  * Sector exposure bars and Market Capitalization split (Large Cap, Mid Cap, Small Cap).
+  * SEBI AMC monthly disclosure compliance mapping alongside BSE StAR MF execution folios.
+
 ---
 
 ### Build & Run Offline Testbenches

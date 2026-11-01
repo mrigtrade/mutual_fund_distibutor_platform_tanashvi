@@ -43,6 +43,7 @@ import { ProposalCartView } from './components/ProposalCartView';
 import { ResearchView } from './components/ResearchView';
 import { PromoterDashboardView } from './components/PromoterDashboardView';
 import { InvestorPortalView } from './components/InvestorPortalView';
+import { AumSystematicAnalyticsView } from './components/AumSystematicAnalyticsView';
 import { CheckCircle2, Shield, Activity, RefreshCw } from 'lucide-react';
 
 export default function App() {
@@ -265,6 +266,12 @@ export default function App() {
       {/* Main Workspace */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {currentTab === 'promoter_hq' && <PromoterDashboardView />}
+        {currentTab === 'aum_analytics' && (
+          <AumSystematicAnalyticsView
+            currentSession={currentSession}
+            subDistributors={subDistributors}
+          />
+        )}
         {currentTab === 'investor_portal' && <InvestorPortalView />}
 
         {currentTab === 'kyc' && (
