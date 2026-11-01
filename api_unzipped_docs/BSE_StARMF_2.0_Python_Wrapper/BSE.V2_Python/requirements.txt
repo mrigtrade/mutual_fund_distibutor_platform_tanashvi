@@ -1,0 +1,32 @@
+    install python 
+            version: Python 3.13.2
+
+
+    # Install Flask & Mandatory Dependencies
+        pip install flask request
+
+
+
+    #run
+        python main.py
+
+    
+    #default running port
+        http://127.0.0.1:5000
+
+    
+    #endpond like for logins
+        http://127.0.0.1:5000/api/login
+
+
+    #in main.py file you can see all end points for
+        login
+        UCC
+        Order
+        SXP
+        Nft
+        Payment
+        Master
+        Nav
+        2fa
+        Mandate

@@ -1,0 +1,39 @@
+{
+  "name": "bse-star-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "db:migrate": "node dist/database/migrate.js",
+    "test:jose": "node dist/tests/test_jose_security.js",
+    "test:mock": "node dist/tests/test_phase3_mock_integration.js",
+    "test:webhook": "node dist/tests/test_phase4_webhook_state_machine.js",
+    "test:api": "node dist/tests/test_phase5_api_server.js",
+    "test:calculators": "node dist/tests/test_calculators.js",
+    "test:schemes": "node dist/tests/test_amfi_nav.js",
+    "test": "npm run build && npm run test:jose && npm run test:mock && npm run test:webhook && npm run test:api && npm run test:calculators && npm run test:schemes"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "jose": "^6.2.14",
+    "pg": "^8.23.1",
+    "uuid": "^14.0.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

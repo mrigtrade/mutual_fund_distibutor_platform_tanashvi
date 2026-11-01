@@ -1,0 +1,176 @@
+{
+  "investor_pan": "AAAPS1234K",
+  "investor_name": "Ramesh Sharma",
+  "investor_email": "ramesh.sharma@example.com",
+  "client_code": "UCC-RAMESH-001",
+  "statement_period_from": "2017-01-01",
+  "statement_period_to": "2026-10-31",
+  "statement_source": "CAMS",
+  "folios": [
+    {
+      "folio_number": "10293847/56",
+      "amc_name": "HDFC Mutual Fund",
+      "amc_code": "HDFC_MF",
+      "pan": "AAAPS1234K",
+      "schemes": [
+        {
+          "scheme_name": "HDFC Top 100 Fund - Regular Plan - Growth",
+          "isin": "INF769K01010",
+          "amfi_code": "101968",
+          "advisor": "ARN-347849",
+          "transactions": [
+            {
+              "date": "2017-06-15",
+              "type": "PURCHASE",
+              "description": "Initial Purchase (Pre-2018 Grandfathered)",
+              "amount": 225000.00,
+              "units": 500.0000,
+              "nav": 450.0000,
+              "balance_units": 500.0000
+            },
+            {
+              "date": "2024-08-20",
+              "type": "REDEMPTION",
+              "description": "Partial Redemption (Post Budget 2024)",
+              "amount": 197084.00,
+              "units": 200.0000,
+              "nav": 985.4200,
+              "balance_units": 300.0000
+            }
+          ]
+        },
+        {
+          "scheme_name": "HDFC Short Term Debt Fund - Regular Plan - Growth",
+          "isin": "INF769K01051",
+          "amfi_code": "102873",
+          "advisor": "ARN-347849",
+          "transactions": [
+            {
+              "date": "2023-05-10",
+              "type": "PURCHASE",
+              "description": "Debt Purchase (Sec 50AA Post 01-Apr-2023)",
+              "amount": 25500.00,
+              "units": 1000.0000,
+              "nav": 25.5000,
+              "balance_units": 1000.0000
+            },
+            {
+              "date": "2024-11-15",
+              "type": "REDEMPTION",
+              "description": "Partial Debt Redemption",
+              "amount": 11280.00,
+              "units": 400.0000,
+              "nav": 28.2000,
+              "balance_units": 600.0000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folio_number": "99887766/01",
+      "amc_name": "PPFAS Mutual Fund",
+      "amc_code": "PPFAS_MF",
+      "pan": "AAAPS1234K",
+      "schemes": [
+        {
+          "scheme_name": "Parag Parikh Flexi Cap Fund - Regular Plan - Growth",
+          "isin": "INF879O01019",
+          "amfi_code": "122639",
+          "advisor": "ARN-347849",
+          "transactions": [
+            {
+              "date": "2022-01-10",
+              "type": "SIP",
+              "description": "Systematic Investment",
+              "amount": 10000.00,
+              "units": 200.0000,
+              "nav": 50.0000,
+              "balance_units": 200.0000
+            },
+            {
+              "date": "2022-07-10",
+              "type": "SIP",
+              "description": "Systematic Investment",
+              "amount": 10000.00,
+              "units": 181.8182,
+              "nav": 55.0000,
+              "balance_units": 381.8182
+            },
+            {
+              "date": "2023-01-10",
+              "type": "SIP",
+              "description": "Systematic Investment",
+              "amount": 10000.00,
+              "units": 166.6667,
+              "nav": 60.0000,
+              "balance_units": 548.4849
+            },
+            {
+              "date": "2023-07-10",
+              "type": "SIP",
+              "description": "Systematic Investment",
+              "amount": 10000.00,
+              "units": 153.8462,
+              "nav": 65.0000,
+              "balance_units": 702.3311
+            },
+            {
+              "date": "2024-01-10",
+              "type": "SIP",
+              "description": "Systematic Investment",
+              "amount": 10000.00,
+              "units": 142.8571,
+              "nav": 70.0000,
+              "balance_units": 845.1882
+            },
+            {
+              "date": "2024-09-05",
+              "type": "REDEMPTION",
+              "description": "Partial Flexi Cap Redemption (Post Budget 2024)",
+              "amount": 11767.50,
+              "units": 150.0000,
+              "nav": 78.4500,
+              "balance_units": 695.1882
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "folio_number": "55443322/19",
+      "amc_name": "ICICI Prudential Mutual Fund",
+      "amc_code": "ICICI_PRU_MF",
+      "pan": "AAAPS1234K",
+      "schemes": [
+        {
+          "scheme_name": "ICICI Prudential Liquid Fund - Regular Plan - Growth",
+          "isin": "INF109K01840",
+          "amfi_code": "100078",
+          "advisor": "ARN-347849",
+          "transactions": [
+            {
+              "date": "2024-05-10",
+              "type": "PURCHASE",
+              "description": "Liquid Emergency Fund",
+              "amount": 35000.00,
+              "units": 100.0000,
+              "nav": 350.0000,
+              "balance_units": 100.0000
+            },
+            {
+              "date": "2024-08-01",
+              "type": "REDEMPTION",
+              "description": "Emergency Withdrawal (Post Budget 2024)",
+              "amount": 17775.00,
+              "units": 50.0000,
+              "nav": 355.5000,
+              "balance_units": 50.0000
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

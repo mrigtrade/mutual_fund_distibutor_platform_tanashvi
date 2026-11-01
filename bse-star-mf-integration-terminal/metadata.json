@@ -1,0 +1,6 @@
+{
+  "name": "BSE StAR MF Integration Terminal",
+  "description": "Comprehensive BSE StAR MF official API connection portal, UCC client registration, mutual fund order routing, SIP/mandate management, and developer testbench.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

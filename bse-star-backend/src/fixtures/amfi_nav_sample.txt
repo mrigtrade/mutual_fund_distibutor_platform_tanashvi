@@ -1,0 +1,64 @@
+Open Ended Schemes ( Equity Scheme - Large Cap Fund )
+HDFC Mutual Fund
+100027;INF769K01010;INF769K01028;HDFC Top 100 Fund - Regular Plan - Growth;985.4200;31-Oct-2026
+100028;INF769K01036;INF769K01044;HDFC Top 100 Fund - Regular Plan - IDCW;65.1200;31-Oct-2026
+118989;INF179K01BE2;INF179K01BF9;HDFC Top 100 Fund - Direct Plan - Growth;1075.8900;31-Oct-2026
+
+ICICI Prudential Mutual Fund
+100377;INF109K01131;INF109K01149;ICICI Prudential Bluechip Fund - Regular Plan - Growth;95.4200;31-Oct-2026
+120586;INF109K01VL7;INF109K01VM5;ICICI Prudential Bluechip Fund - Direct Plan - Growth;108.3100;31-Oct-2026
+
+SBI Mutual Fund
+102885;INF200K01149;INF200K01156;SBI Bluechip Fund - Regular Plan - Growth;82.3500;31-Oct-2026
+119598;INF200K01RN8;INF200K01RO6;SBI Bluechip Fund - Direct Plan - Growth;91.2400;31-Oct-2026
+
+Open Ended Schemes ( Equity Scheme - Flexi Cap Fund )
+Parag Parikh Mutual Fund
+122639;INF879O01019;INF879O01027;Parag Parikh Flexi Cap Fund - Regular Plan - Growth;78.4500;31-Oct-2026
+122640;INF879O01035;INF879O01043;Parag Parikh Flexi Cap Fund - Direct Plan - Growth;85.9200;31-Oct-2026
+
+HDFC Mutual Fund
+101181;INF769K01077;INF769K01085;HDFC Flexi Cap Fund - Regular Plan - Growth;1620.4500;31-Oct-2026
+118968;INF179K01BB8;INF179K01BC6;HDFC Flexi Cap Fund - Direct Plan - Growth;1765.2000;31-Oct-2026
+
+Kotak Mahindra Mutual Fund
+112090;INF174K01LS2;INF174K01LT0;Kotak Flexicap Fund - Regular Plan - Growth;75.8200;31-Oct-2026
+120152;INF174K01SY3;INF174K01SZ0;Kotak Flexicap Fund - Direct Plan - Growth;84.1500;31-Oct-2026
+
+Open Ended Schemes ( Equity Scheme - Mid Cap Fund )
+HDFC Mutual Fund
+101635;INF769K01192;INF769K01200;HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth;178.6500;31-Oct-2026
+118978;INF179K01AY2;INF179K01AZ9;HDFC Mid-Cap Opportunities Fund - Direct Plan - Growth;196.5000;31-Oct-2026
+
+Kotak Mahindra Mutual Fund
+105809;INF174K01337;INF174K01345;Kotak Emerging Equity Fund - Regular Plan - Growth;112.4500;31-Oct-2026
+120166;INF174K01TH4;INF174K01TI2;Kotak Emerging Equity Fund - Direct Plan - Growth;124.9000;31-Oct-2026
+
+Open Ended Schemes ( Equity Scheme - Small Cap Fund )
+Nippon India Mutual Fund
+113177;INF204K01018;INF204K01026;Nippon India Small Cap Fund - Regular Plan - Growth;162.7500;31-Oct-2026
+118778;INF204K01E03;INF204K01E11;Nippon India Small Cap Fund - Direct Plan - Growth;181.2000;31-Oct-2026
+
+Quant Mutual Fund
+100346;INF966L01019;INF966L01027;Quant Small Cap Fund - Regular Plan - Growth;245.3000;31-Oct-2026
+120828;INF966L01AA3;INF966L01AB1;Quant Small Cap Fund - Direct Plan - Growth;272.1500;31-Oct-2026
+
+Open Ended Schemes ( Equity Scheme - ELSS )
+Mirae Asset Mutual Fund
+135781;INF769K01HQ5;INF769K01HR3;Mirae Asset ELSS Tax Saver Fund - Regular Plan - Growth;42.8500;31-Oct-2026
+135782;INF769K01HS1;INF769K01HT9;Mirae Asset ELSS Tax Saver Fund - Direct Plan - Growth;48.1200;31-Oct-2026
+
+Open Ended Schemes ( Debt Scheme - Liquid Fund )
+HDFC Mutual Fund
+100033;INF769K01507;INF769K01515;HDFC Liquid Fund - Regular Plan - Growth;4620.1500;31-Oct-2026
+119041;INF179K01CN1;INF179K01CO9;HDFC Liquid Fund - Direct Plan - Growth;4658.9000;31-Oct-2026
+
+ICICI Prudential Mutual Fund
+103444;INF109K01990;INF109K01AA4;ICICI Prudential Liquid Fund - Regular Plan - Growth;358.4200;31-Oct-2026
+120594;INF109K01WA3;INF109K01WB1;ICICI Prudential Liquid Fund - Direct Plan - Growth;361.8500;31-Oct-2026
+
+Open Ended Schemes ( Debt Scheme - Overnight Fund )
+SBI Mutual Fund
+147425;INF200K01TX1;INF200K01TY9;SBI Overnight Fund - Regular Plan - Growth;3750.2500;31-Oct-2026
+147426;INF200K01TZ6;INF200K01UA7;SBI Overnight Fund - Direct Plan - Growth;3762.1000;31-Oct-2026
+
