@@ -297,6 +297,15 @@ All communication with BSE StAR MF v2 endpoints strictly adheres to the **JOSE (
 * Node.js v20+ or v22 LTS
 * npm v10+
 
+### Phase 12: 4-Tier Roles Architecture & Report Generation (PDF / XLS)
+* **Category 1: MFD Standalone Subscriber:** Independent distributor managing their own client roster, placing orders with ARN & EUIN attribution.
+* **Category 2: MFD with Sub-Brokers:** Institutional distributor managing branch desks, sub-broker ARN routing, and commission revenue splits.
+* **Category 3: End Investor / Client Portal:** Dedicated client-facing experience (*Ramesh Sharma*) viewing net worth, asset allocation, active SIP schedule, pending proposal carts, and capital gains statements.
+* **Category 4: Tanashvi Promoters & Super-Admin:** Executive portal for Tanashvi Fintech Private Limited (Member `714114`, ARN-347849) tracking 42 subscribed MFDs, ₹148.65 Cr platform AUM, 24h BSE transaction velocity, and SEBI Regulation 25 audit trails.
+* **Client-Side PDF & Formatted Excel (.xls / .csv) Engine:** 1-click export of branded portfolio valuations, capital gains tax lots, financial goal schedules, fund comparison matrices, and investor proposal dossiers.
+
+---
+
 ### Build & Run Offline Testbenches
 ```powershell
 cd bse-star-backend

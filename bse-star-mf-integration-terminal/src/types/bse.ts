@@ -46,7 +46,13 @@ export interface SubDistributor {
   createdAt: string;
 }
 
-export type UserRole = 'MASTER_MFD' | 'SUB_DISTRIBUTOR';
+export type UserRole = 
+  | 'PLATFORM_SUPER_ADMIN' // Category 4: Tanashvi Promoters & Platform Owners (ARN-347849)
+  | 'MASTER_MFD'           // Tanashvi Principal MFD View
+  | 'MFD_STANDALONE'       // Category 1: Standalone MFD Subscriber
+  | 'MFD_NETWORK'          // Category 2: MFD with Sub-Brokers & Branch Desks
+  | 'SUB_DISTRIBUTOR'      // Category 2: Sub-Broker / RM
+  | 'CLIENT_INVESTOR';     // Category 3: End Investor / Client (e.g. Ramesh Sharma)
 
 export interface ActiveUserSession {
   role: UserRole;
@@ -54,7 +60,11 @@ export interface ActiveUserSession {
   subBrokerCode?: string;
   euin?: string;
   name: string;
-  memberId: string; // Master Member ARN
+  memberId: string; // Master Member Code (714114)
+  clientCode?: string; // For CLIENT_INVESTOR
+  pan?: string;        // For CLIENT_INVESTOR
+  tenantCode?: string; // Tenant Identifier
+  roleTitle?: string;
 }
 
 export type KraStatus = 'KYC_VALIDATED' | 'KYC_REGISTERED' | 'KYC_ON_HOLD' | 'NOT_KYC';

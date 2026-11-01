@@ -261,6 +261,36 @@
 
 ---
 
+### Phase 12: Multi-Tenant 4-Role Architecture & PDF/XLS Report Generation
+* **4-Tier User Role Matrix & Active Persona Switcher:**
+  * **Category 1: MFD Standalone Subscriber:** Independent distributor subscriber serving their own clients with dedicated UCC onboarding, Order Engine, Mandates, Proposal Baskets, and Calculators.
+  * **Category 2: MFD with Sub-Brokers (Institutional / Multi-Branch Network):** Multi-branch distributor network managing branch desks (`tenant_sub_brokers`), RM EUIN attribution (`tenant_euins`), and commission sharing splits (e.g. 70/30).
+  * **Category 3: End Investor / Client Portal (`InvestorPortalView.tsx`):**
+    * File: [`src/components/InvestorPortalView.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/InvestorPortalView.tsx)
+    * Personalized client dashboard (e.g., *Ramesh Sharma*, UCC `UCC-RAMESH-001`, PAN `AAAPS1234K`).
+    * Consolidated portfolio valuation (₹3.84L), scheme holdings with XIRR, asset allocation, active SIP calendar with e-NACH debits, pending proposal baskets with one-click payment checkout, and ITR capital gains tax statements.
+    * Back-office distributor tools (Scheme Master, UCC registration, BSE logs, Sub-distributors) hidden for security and simplicity.
+  * **Category 4: Tanashvi Promoters & Platform Super-Admin (`PromoterDashboardView.tsx`):**
+    * File: [`src/components/PromoterDashboardView.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/PromoterDashboardView.tsx)
+    * Executive control center for Tanashvi Fintech Private Limited (ARN-347849, BSE Member `714114`).
+    * Aggregated metrics across 42 subscribed MFDs, ₹148.65 Cr cumulative platform AUM, 14,250 folios, 24-hour BSE transaction throughput (₹84.5L, 99.4% success), BSE gateway latency monitor (avg 318ms), and SEBI Regulation 25 immutable 7-year audit logs.
+* **Unified Role & Persona Switcher Modal:**
+  * File: [`src/components/SubDistributorModal.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/SubDistributorModal.tsx)
+  * Instant 1-click persona switching between Tanashvi HQ, Standalone MFD (Apex Wealth), Network Sub-Broker (Amit Wealth / Pooja Financial), and End Investor (Ramesh Sharma).
+* **Client-Side PDF & Formatted Excel (.xls / .csv) Reporting Utility:**
+  * File: [`src/utils/exportUtils.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/utils/exportUtils.ts)
+  * Implemented using `jspdf` and `jspdf-autotable` with Tanashvi header, branding ("भवतः हिताय"), date, styled data tables, KPI summary cards, and SEBI compliance disclaimers.
+  * Formatted Excel XML (.xls) and CSV export for spreadsheets.
+* **Export Integrations across Views:**
+  * **Portfolio & Tax (`PortfolioTaxView.tsx`):** Portfolio Valuation Statement (PDF & XLS), Capital Gains Tax Statement (PDF & XLS).
+  * **Calculators (`CalculatorsView.tsx`):** Goal & SIP Amortization Schedule (PDF & XLS).
+  * **Proposal Cart (`ProposalCartView.tsx`):** Investment Proposal Dossier (PDF).
+  * **MF Research (`ResearchView.tsx`):** 4-Way Comparison Report & Portfolio Overlap Report (PDF & XLS).
+  * **Promoter Dashboard (`PromoterDashboardView.tsx`):** Subscribed MFD Directory & Regulatory Audit Trail (PDF & XLS).
+  * **Investor Portal (`InvestorPortalView.tsx`):** Client Account Statement & Capital Gains ITR Report (PDF & XLS).
+
+---
+
 ## 📌 Quick Context & Key Credentials Reference
 
 * **Entity:** Tanashvi Fintech Private Limited

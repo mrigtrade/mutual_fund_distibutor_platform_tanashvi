@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { PieChart, TrendingUp, ShieldCheck, FileText, CheckCircle2, AlertCircle, Download, ArrowUpRight, DollarSign } from 'lucide-react';
+import { PieChart, TrendingUp, ShieldCheck, FileText, CheckCircle2, AlertCircle, Download, ArrowUpRight, DollarSign, FileSpreadsheet } from 'lucide-react';
+import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
 
 export const PortfolioTaxView: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState<'ramesh' | 'sunita' | 'vikram'>('ramesh');
@@ -240,6 +241,128 @@ export const PortfolioTaxView: React.FC = () => {
     }).format(val);
   };
 
+  // --- Export Handlers ---
+  const handleExportPortfolioPdf = () => {
+    const headers = ['Scheme Name', 'Category', 'Units', 'Latest NAV', 'Current Value', 'XIRR'];
+    const rows = activeClientData.holdings.map((h: any) => [
+      h.name,
+      h.type,
+      h.units.toFixed(2),
+      `₹${h.nav.toFixed(2)}`,
+      `₹${Math.round(h.units * h.nav).toLocaleString()}`,
+      `${h.xirr}%`
+    ]);
+
+    exportReportToPdf({
+      title: 'Mutual Fund Portfolio Valuation & XIRR Report',
+      subtitle: 'Serviced by: Tanashvi Wealth Advisory (ARN-347849)',
+      clientName: activeClientData.investorName,
+      pan: activeClientData.pan,
+      ucc: activeClientData.ucc,
+      summaryCards: [
+        { label: 'Current Value', value: formatInr(portfolioSummary.currentValue) },
+        { label: 'Total Invested', value: formatInr(portfolioSummary.totalInvested) },
+        { label: 'Absolute Gain', value: `+${formatInr(portfolioSummary.absoluteGain)}` },
+        { label: 'Portfolio XIRR', value: `${portfolioSummary.portfolioXirr}% p.a.` }
+      ],
+      headers,
+      rows,
+      filename: `portfolio_${activeClientData.investorName.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`,
+      footerNotes: [
+        'Valuations based on latest available NAVs from BSE StAR MF.',
+        'XIRR calculated across purchase cashflows and current market value.'
+      ]
+    });
+  };
+
+  const handleExportPortfolioXls = () => {
+    const headers = ['Scheme Name', 'Category', 'Units', 'Latest NAV', 'Current Value (INR)', 'XIRR (%)'];
+    const rows = activeClientData.holdings.map((h: any) => [
+      h.name,
+      h.type,
+      h.units,
+      h.nav,
+      Math.round(h.units * h.nav),
+      h.xirr
+    ]);
+
+    exportToExcelXls(
+      `portfolio_${activeClientData.investorName.toLowerCase().replace(/[^a-z0-9]/g, '_')}.xls`,
+      'Holdings',
+      headers,
+      rows,
+      {
+        title: 'Portfolio Valuation & Allocation Statement',
+        clientName: activeClientData.investorName,
+        pan: activeClientData.pan,
+        subtitle: `Total Portfolio Valuation: ${formatInr(portfolioSummary.currentValue)}`
+      }
+    );
+  };
+
+  const handleExportTaxPdf = () => {
+    const headers = ['Scheme Name', 'Purchase Date', 'Sale Date', 'Units', 'Gain Type', 'Gain (₹)', 'Tax Rate', 'Grandfathered'];
+    const rows = realizedTaxData.fifoLots.map((lot: any) => [
+      lot.scheme,
+      lot.purchaseDate,
+      lot.saleDate,
+      lot.units,
+      lot.gainType,
+      `₹${lot.gain.toFixed(2)}`,
+      lot.taxRate,
+      lot.isGrandfathered ? 'Yes (Sec 112A)' : 'No'
+    ]);
+
+    exportReportToPdf({
+      title: `Capital Gains Statement - FY ${selectedFy}`,
+      subtitle: 'Prepared under Section 112A (Equity LTCG) & Section 50AA (Debt STCG) - Finance Act 2024',
+      clientName: activeClientData.investorName,
+      pan: activeClientData.pan,
+      ucc: activeClientData.ucc,
+      summaryCards: [
+        { label: 'Total Realized Sales', value: formatInr(realizedTaxData.totalRealizedSales) },
+        { label: 'Gross Capital Gain', value: formatInr(realizedTaxData.grossGain) },
+        { label: 'Sec 112A Exemption', value: formatInr(realizedTaxData.equityLtcg.exemptionApplied) },
+        { label: 'Net Tax Liability', value: formatInr(realizedTaxData.totalTaxLiability) }
+      ],
+      headers,
+      rows,
+      filename: `capital_gains_tax_${activeClientData.investorName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${selectedFy}.pdf`,
+      footerNotes: [
+        'Post July 23, 2024 rates applied: Equity STCG @ 20%, Equity LTCG @ 12.5%.',
+        'Section 112A annual exemption limit of ₹1,25,000 applied to Equity LTCG.',
+        'Debt schemes purchased on or after 01-Apr-2023 classified as STCG under Section 50AA.'
+      ]
+    });
+  };
+
+  const handleExportTaxXls = () => {
+    const headers = ['Scheme Name', 'Purchase Date', 'Sale Date', 'Units', 'Gain Type', 'Capital Gain (INR)', 'Tax Rate', 'Grandfathered'];
+    const rows = realizedTaxData.fifoLots.map((lot: any) => [
+      lot.scheme,
+      lot.purchaseDate,
+      lot.saleDate,
+      lot.units,
+      lot.gainType,
+      lot.gain,
+      lot.taxRate,
+      lot.isGrandfathered ? 'YES' : 'NO'
+    ]);
+
+    exportToExcelXls(
+      `tax_statement_${activeClientData.investorName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${selectedFy}.xls`,
+      'Tax Lots',
+      headers,
+      rows,
+      {
+        title: `Capital Gains Tax Statement - FY ${selectedFy}`,
+        clientName: activeClientData.investorName,
+        pan: activeClientData.pan,
+        subtitle: `Total Tax Liability: ${formatInr(realizedTaxData.totalTaxLiability)}`
+      }
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner (AdvisorKhoj Feature Banner) */}
@@ -312,21 +435,21 @@ export const PortfolioTaxView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setActiveTab('tax')}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow ${
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow ${
                 activeTab === 'tax'
                   ? 'bg-[#c5a059] text-slate-950 font-bold'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
               <ShieldCheck className="w-4 h-4" />
-              Capital Gains Report
+              Capital Gains
             </button>
             <button
               onClick={() => setActiveTab('portfolio')}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+              className={`px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                 activeTab === 'portfolio'
                   ? 'bg-[#c5a059] text-slate-950 font-bold'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -334,6 +457,22 @@ export const PortfolioTaxView: React.FC = () => {
             >
               <PieChart className="w-4 h-4" />
               Holdings & XIRR
+            </button>
+            <button
+              onClick={handleExportPortfolioPdf}
+              className="px-3 py-2 bg-gradient-to-r from-[#c5a059] to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow cursor-pointer"
+              title="Download Branded Portfolio PDF"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Portfolio PDF</span>
+            </button>
+            <button
+              onClick={handleExportPortfolioXls}
+              className="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium rounded-lg text-xs flex items-center gap-1.5 cursor-pointer"
+              title="Export Portfolio Holdings to Excel (.xls)"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+              <span>XLS</span>
             </button>
           </div>
         </div>
@@ -354,7 +493,7 @@ export const PortfolioTaxView: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-slate-400">Assessment FY:</span>
               <select
                 value={selectedFy}
@@ -364,6 +503,22 @@ export const PortfolioTaxView: React.FC = () => {
                 <option value="2024-2025">FY 2024-2025</option>
                 <option value="2025-2026">FY 2025-2026</option>
               </select>
+              <button
+                onClick={handleExportTaxPdf}
+                className="px-3 py-1.5 bg-[#c5a059] hover:bg-amber-500 text-slate-950 font-bold text-xs rounded-lg flex items-center gap-1.5 cursor-pointer shadow"
+                title="Download Capital Gains Statement PDF"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Tax PDF</span>
+              </button>
+              <button
+                onClick={handleExportTaxXls}
+                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs rounded-lg flex items-center gap-1 cursor-pointer"
+                title="Export Capital Gains Lots to Excel (.xls)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                <span>XLS</span>
+              </button>
             </div>
           </div>
 

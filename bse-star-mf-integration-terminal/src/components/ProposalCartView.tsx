@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Link, Send, CheckCircle2, ArrowRight, ShieldCheck, Copy, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
+import { ShoppingCart, Plus, Link, Send, CheckCircle2, ArrowRight, ShieldCheck, Copy, ExternalLink, RefreshCw, Trash2, Download, FileText } from 'lucide-react';
 import { MOCK_SCHEMES } from '../data/mockBseData';
+import { exportReportToPdf } from '../utils/exportUtils';
 
 export const ProposalCartView: React.FC = () => {
   const [clientCode, setClientCode] = useState('UCC-RAMESH-001');
@@ -76,6 +77,38 @@ export const ProposalCartView: React.FC = () => {
     setItems(items.filter((_, i) => i !== index));
   };
 
+  const handleExportProposalPdf = () => {
+    const headers = ['Investment Type', 'Mutual Fund Scheme', 'BSE Scheme Code', 'Allocation Amount', 'Frequency'];
+    const rows = items.map(item => [
+      item.type,
+      item.schemeName,
+      item.schemeCode,
+      `₹${item.amount.toLocaleString()}`,
+      item.type === 'SIP' ? `Monthly (${item.sipDay || 10}th of month)` : 'One-time Lumpsum'
+    ]);
+
+    exportReportToPdf({
+      title: 'Mutual Fund Investment Proposal Dossier',
+      subtitle: proposalTitle,
+      clientName: investorName,
+      ucc: clientCode,
+      summaryCards: [
+        { label: 'Total Lumpsum', value: `₹${totalLumpsum.toLocaleString()}` },
+        { label: 'Monthly SIP', value: `₹${totalSip.toLocaleString()}/mo` },
+        { label: 'Selected Schemes', value: `${items.length} Funds` },
+        { label: 'Distributor ARN', value: mfdArn }
+      ],
+      headers,
+      rows,
+      filename: `investment_proposal_${investorName.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`,
+      footerNotes: [
+        'Prepared by Tanashvi Wealth Advisory (ARN-347849, EUIN: E123456).',
+        'Transactions executed via BSE StAR MF v2 Production Gateway.',
+        'Mutual fund investments are subject to market risks. Read all scheme related documents carefully.'
+      ]
+    });
+  };
+
   const handleGenerateLink = () => {
     const proposalId = `PROP-${Date.now().toString().slice(-6)}`;
     const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -134,10 +167,20 @@ export const ProposalCartView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-slate-300 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
-          <span className="text-[#c5a059]">ARN: {mfdArn}</span>
-          <span className="text-slate-600">|</span>
-          <span>EUIN: {mfdEuin}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-xs font-mono text-slate-300 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
+            <span className="text-[#c5a059]">ARN: {mfdArn}</span>
+            <span className="text-slate-600">|</span>
+            <span>EUIN: {mfdEuin}</span>
+          </div>
+          <button
+            onClick={handleExportProposalPdf}
+            className="px-3.5 py-2 bg-gradient-to-r from-[#c5a059] to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow cursor-pointer"
+            title="Download Client-Ready Proposal PDF"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export Proposal PDF</span>
+          </button>
         </div>
       </div>
 

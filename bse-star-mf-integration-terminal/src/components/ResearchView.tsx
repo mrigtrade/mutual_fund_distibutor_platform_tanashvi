@@ -11,8 +11,11 @@ import {
   HelpCircle,
   Award,
   ArrowRight,
-  Info
+  Info,
+  Download,
+  FileSpreadsheet
 } from 'lucide-react';
+import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
 
 interface SchemeInfo {
   code: string;
@@ -507,6 +510,128 @@ export const ResearchView: React.FC = () => {
     }
   }
 
+  // --- Export Handlers ---
+  const handleExportResearchPdf = () => {
+    let title = 'Mutual Fund Performance & Risk Analysis';
+    let headers: string[] = [];
+    let rows: (string | number)[][] = [];
+
+    if (activeSubTab === 'compare') {
+      title = 'Mutual Fund 4-Way Comparison Report';
+      headers = ['Scheme Name', 'Category', '1Y Return', '3Y Return', '5Y Return', 'Sharpe Ratio', 'Beta', 'Alpha', 'TER'];
+      rows = compareSchemes.map(code => {
+        const p = researchProfiles[code];
+        if (!p) return [];
+        return [
+          p.name,
+          p.category,
+          `${p.returns.y1}%`,
+          `${p.returns.y3}%`,
+          `${p.returns.y5}%`,
+          p.risk.sharpe.toFixed(2),
+          p.risk.beta.toFixed(2),
+          `${p.risk.alpha.toFixed(2)}%`,
+          p.ter
+        ];
+      }).filter(r => r.length > 0);
+    } else if (activeSubTab === 'overlap') {
+      const pA = researchProfiles[overlapSchemeA];
+      const pB = researchProfiles[overlapSchemeB];
+      title = `Portfolio Overlap Report: ${pA?.name.slice(0, 25)} vs ${pB?.name.slice(0, 25)}`;
+      headers = ['Common Company Holding', 'Industry Sector', 'Weight in Fund A (%)', 'Weight in Fund B (%)', 'Overlap Weight (%)'];
+      rows = commonHoldings.map(h => [
+        h.name,
+        h.sector,
+        `${h.weightA.toFixed(2)}%`,
+        `${h.weightB.toFixed(2)}%`,
+        `${h.overlap.toFixed(2)}%`
+      ]);
+    } else {
+      title = 'Mutual Fund Risk-Adjusted Analytics';
+      headers = ['Scheme Name', 'Category', 'Std Deviation', 'Sharpe Ratio', 'Sortino', 'Beta', 'Alpha', 'R-Squared'];
+      rows = Object.values(researchProfiles).slice(0, 10).map((p: any) => [
+        p.name,
+        p.category,
+        `${p.risk.sd.toFixed(2)}%`,
+        p.risk.sharpe.toFixed(2),
+        p.risk.sortino.toFixed(2),
+        p.risk.beta.toFixed(2),
+        `${p.risk.alpha.toFixed(2)}%`,
+        p.risk.r2.toFixed(2)
+      ]);
+    }
+
+    exportReportToPdf({
+      title,
+      subtitle: 'Tanashvi Wealth Management · BSE StAR Member 714114 · AMFI ARN-347849',
+      summaryCards: activeSubTab === 'overlap' ? [
+        { label: 'Overlap Percentage', value: `${totalOverlapWeight.toFixed(1)}%` },
+        { label: 'Common Stocks', value: `${commonHoldings.length} Companies` },
+        { label: 'Fund A Holdings', value: `${holdingsA.length} Stocks` },
+        { label: 'Fund B Holdings', value: `${holdingsB.length} Stocks` }
+      ] : [
+        { label: 'Analytics Engine', value: 'AdvisorKhoj Parity' },
+        { label: 'Benchmark', value: 'Nifty 50 TRI' },
+        { label: 'Risk Free Rate', value: '6.50% (91D T-Bill)' },
+        { label: 'NAV Source', value: 'BSE StAR MF' }
+      ],
+      headers,
+      rows,
+      filename: `tanashvi_research_${activeSubTab}.pdf`,
+      footerNotes: [
+        'Rolling returns and risk ratios computed over daily historical NAV sequences.',
+        'Mutual fund investments are subject to market risks. Read all scheme related documents carefully.'
+      ]
+    });
+  };
+
+  const handleExportResearchXls = () => {
+    let headers: string[] = [];
+    let rows: (string | number)[][] = [];
+
+    if (activeSubTab === 'compare') {
+      headers = ['Scheme Name', 'Category', '1Y Return (%)', '3Y Return (%)', '5Y Return (%)', 'Sharpe Ratio', 'Beta', 'Alpha (%)', 'TER'];
+      rows = compareSchemes.map(code => {
+        const p = researchProfiles[code];
+        if (!p) return [];
+        return [
+          p.name,
+          p.category,
+          p.returns.y1,
+          p.returns.y3,
+          p.returns.y5,
+          p.risk.sharpe,
+          p.risk.beta,
+          p.risk.alpha,
+          p.ter
+        ];
+      }).filter(r => r.length > 0);
+    } else {
+      headers = ['Scheme Name', 'Category', 'Std Dev (%)', 'Sharpe', 'Sortino', 'Beta', 'Alpha (%)', 'R2'];
+      rows = Object.values(researchProfiles).slice(0, 10).map((p: any) => [
+        p.name,
+        p.category,
+        p.risk.sd,
+        p.risk.sharpe,
+        p.risk.sortino,
+        p.risk.beta,
+        p.risk.alpha,
+        p.risk.r2
+      ]);
+    }
+
+    exportToExcelXls(
+      `tanashvi_research_${activeSubTab}.xls`,
+      'Research Analytics',
+      headers,
+      rows,
+      {
+        title: `Tanashvi MF Research & Analytics (${activeSubTab.toUpperCase()})`,
+        subtitle: 'Benchmark: Nifty 50 TRI · Risk-Free Rate: 6.50%'
+      }
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner with Tanashvi Branding */}
@@ -575,6 +700,26 @@ export const ResearchView: React.FC = () => {
             >
               <Layers className="w-3.5 h-3.5" />
               Portfolio Overlap
+            </button>
+          </div>
+
+          {/* Export Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportResearchPdf}
+              className="px-3.5 py-1.5 bg-gradient-to-r from-[#c5a059] to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow cursor-pointer"
+              title="Download Research Analytics PDF Report"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export PDF</span>
+            </button>
+            <button
+              onClick={handleExportResearchXls}
+              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium rounded-lg text-xs flex items-center gap-1.5 cursor-pointer"
+              title="Export Research Analytics Table to Excel (.xls)"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Export XLS</span>
             </button>
           </div>
         </div>

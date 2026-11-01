@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Calculator, TrendingUp, Award, GraduationCap, Compass, DollarSign, ArrowDownRight, RefreshCw, ArrowRight } from 'lucide-react';
+import { Calculator, TrendingUp, Award, GraduationCap, Compass, DollarSign, ArrowDownRight, RefreshCw, ArrowRight, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
 
 export const CalculatorsView: React.FC = () => {
   const [activeCalc, setActiveCalc] = useState<'sip' | 'stepup' | 'crorepati' | 'education' | 'retirement' | 'swp' | 'stp'>('crorepati');
@@ -98,6 +99,111 @@ export const CalculatorsView: React.FC = () => {
     }).format(val);
   };
 
+  // --- Amortization Schedule & Report Exporters ---
+  const generateAmortizationSchedule = () => {
+    const rows = [];
+    if (activeCalc === 'crorepati') {
+      let invested = 0;
+      let corpus = 0;
+      for (let yr = 1; yr <= croreYears; yr++) {
+        invested += croreSip * 12;
+        corpus = Math.round(
+          croreSip * (((Math.pow(1 + croreMonthlyRate, yr * 12) - 1) / croreMonthlyRate) * (1 + croreMonthlyRate))
+        );
+        rows.push([
+          `Year ${yr}`,
+          `₹${(croreSip * 12).toLocaleString()}`,
+          `₹${invested.toLocaleString()}`,
+          `₹${corpus.toLocaleString()}`,
+          `₹${Math.max(0, corpus - invested).toLocaleString()}`
+        ]);
+      }
+    } else if (activeCalc === 'stepup') {
+      let invested = 0;
+      let corpus = 0;
+      let monthly = sipAmount;
+      for (let yr = 1; yr <= sipYears; yr++) {
+        const annualInvested = monthly * 12;
+        invested += annualInvested;
+        // Approximation for year end
+        corpus = Math.round(invested * Math.pow(1 + sipRate / 100, yr / 2));
+        rows.push([
+          `Year ${yr}`,
+          `₹${annualInvested.toLocaleString()} (₹${monthly.toLocaleString()}/m)`,
+          `₹${invested.toLocaleString()}`,
+          `₹${corpus.toLocaleString()}`,
+          `₹${Math.max(0, corpus - invested).toLocaleString()}`
+        ]);
+        monthly = Math.round(monthly * (1 + stepUpPct / 100));
+      }
+    } else {
+      let invested = 0;
+      let corpus = 0;
+      for (let yr = 1; yr <= sipYears; yr++) {
+        invested += sipAmount * 12;
+        corpus = Math.round(
+          sipAmount * (((Math.pow(1 + sipMonthlyRate, yr * 12) - 1) / sipMonthlyRate) * (1 + sipMonthlyRate))
+        );
+        rows.push([
+          `Year ${yr}`,
+          `₹${(sipAmount * 12).toLocaleString()}`,
+          `₹${invested.toLocaleString()}`,
+          `₹${corpus.toLocaleString()}`,
+          `₹${Math.max(0, corpus - invested).toLocaleString()}`
+        ]);
+      }
+    }
+    return rows;
+  };
+
+  const handleExportSchedulePdf = () => {
+    const headers = ['Timeline', 'Annual Investment', 'Total Invested', 'Estimated Valuation', 'Wealth Gain'];
+    const rows = generateAmortizationSchedule();
+
+    exportReportToPdf({
+      title: activeCalc === 'crorepati' 
+        ? 'Crorepati Goal Planner & Amortization Schedule' 
+        : activeCalc === 'stepup' 
+        ? 'Step-Up SIP Wealth Accumulation Projection' 
+        : 'Systematic Investment Plan (SIP) Projection Report',
+      subtitle: 'Tanashvi Wealth Advisory · AMFI ARN-347849 · BSE Member 714114',
+      summaryCards: activeCalc === 'crorepati' ? [
+        { label: 'Target Goal', value: formatInr(croreTarget) },
+        { label: 'Required Monthly SIP', value: formatInr(croreSip) },
+        { label: 'Total Invested', value: formatInr(croreTotalInvested) },
+        { label: 'Wealth Created', value: formatInr(croreWealthCreated) }
+      ] : [
+        { label: 'Monthly SIP', value: formatInr(sipAmount) },
+        { label: 'Tenure', value: `${sipYears} Years` },
+        { label: 'Total Invested', value: formatInr(normalTotalInvested) },
+        { label: 'Projected Corpus', value: formatInr(normalSipMaturity) }
+      ],
+      headers,
+      rows,
+      filename: `tanashvi_calculator_${activeCalc}_schedule.pdf`,
+      footerNotes: [
+        'Calculations assume annual compounding and regular periodic monthly investments.',
+        'Mutual fund investments are subject to market risks. Read all scheme related documents carefully.'
+      ]
+    });
+  };
+
+  const handleExportScheduleXls = () => {
+    const headers = ['Timeline', 'Annual Investment', 'Total Invested', 'Estimated Valuation', 'Wealth Gain'];
+    const rows = generateAmortizationSchedule();
+
+    exportToExcelXls(
+      `tanashvi_${activeCalc}_projection.xls`,
+      'Schedule',
+      headers,
+      rows,
+      {
+        title: `Tanashvi Investment Projection Schedule (${activeCalc.toUpperCase()})`,
+        subtitle: `Expected CAGR: ${activeCalc === 'crorepati' ? croreReturn : sipRate}% p.a.`
+      }
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -157,6 +263,26 @@ export const CalculatorsView: React.FC = () => {
             }`}
           >
             Retirement
+          </button>
+        </div>
+
+        {/* Export Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportSchedulePdf}
+            className="px-3.5 py-2 bg-gradient-to-r from-[#c5a059] to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1.5 shadow cursor-pointer"
+            title="Download Plan Schedule as PDF"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export PDF</span>
+          </button>
+          <button
+            onClick={handleExportScheduleXls}
+            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium rounded-lg text-xs flex items-center gap-1.5 cursor-pointer"
+            title="Export Amortization Table to Excel (.xls)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Export XLS</span>
           </button>
         </div>
       </div>

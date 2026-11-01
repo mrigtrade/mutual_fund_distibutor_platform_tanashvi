@@ -41,6 +41,8 @@ import { CalculatorsView } from './components/CalculatorsView';
 import { PortfolioTaxView } from './components/PortfolioTaxView';
 import { ProposalCartView } from './components/ProposalCartView';
 import { ResearchView } from './components/ResearchView';
+import { PromoterDashboardView } from './components/PromoterDashboardView';
+import { InvestorPortalView } from './components/InvestorPortalView';
 import { CheckCircle2, Shield, Activity, RefreshCw } from 'lucide-react';
 
 export default function App() {
@@ -57,9 +59,10 @@ export default function App() {
   const [currentSession, setCurrentSession] = useState<ActiveUserSession>(() => {
     const saved = localStorage.getItem('bse_active_session');
     return saved ? JSON.parse(saved) : {
-      role: 'MASTER_MFD',
-      name: 'Tanashvi (ARN-347849)',
-      memberId: '714114'
+      role: 'PLATFORM_SUPER_ADMIN',
+      name: 'Tanashvi Promoters & Super-Admin',
+      memberId: '714114',
+      roleTitle: 'Tanashvi Platform HQ (BSE Member 714114)'
     };
   });
 
@@ -81,7 +84,15 @@ export default function App() {
     return saved ? JSON.parse(saved) : MOCK_ORDERS;
   });
 
-  const [currentTab, setCurrentTab] = useState<string>('kyc');
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    const savedSession = localStorage.getItem('bse_active_session');
+    if (savedSession) {
+      const parsed = JSON.parse(savedSession);
+      if (parsed.role === 'CLIENT_INVESTOR') return 'investor_portal';
+      if (parsed.role === 'PLATFORM_SUPER_ADMIN') return 'promoter_hq';
+    }
+    return 'promoter_hq';
+  });
   const [isApiConfigOpen, setIsApiConfigOpen] = useState(false);
   const [isDocOpen, setIsDocOpen] = useState(false);
   const [isSubDistributorModalOpen, setIsSubDistributorModalOpen] = useState(false);
@@ -112,10 +123,21 @@ export default function App() {
   const handleSwitchSession = (session: ActiveUserSession) => {
     setCurrentSession(session);
     localStorage.setItem('bse_active_session', JSON.stringify(session));
-    if (session.role === 'SUB_DISTRIBUTOR') {
-      showToast(`Logged in as Sub-Distributor: ${session.name} (${session.subBrokerCode})`);
+    if (session.role === 'CLIENT_INVESTOR') {
+      setCurrentTab('investor_portal');
+      showToast(`Logged in as Category 3: Client Investor (${session.name})`);
+    } else if (session.role === 'PLATFORM_SUPER_ADMIN') {
+      setCurrentTab('promoter_hq');
+      showToast(`Logged in as Category 4: Tanashvi Platform HQ & Promoters`);
+    } else if (session.role === 'MFD_STANDALONE') {
+      setCurrentTab('orders');
+      showToast(`Logged in as Category 1: Standalone MFD (${session.name})`);
+    } else if (session.role === 'SUB_DISTRIBUTOR') {
+      setCurrentTab('orders');
+      showToast(`Logged in as Category 2: Sub-Broker (${session.name})`);
     } else {
-      showToast(`Switched back to Master MFD (Principal Admin)`);
+      setCurrentTab('promoter_hq');
+      showToast(`Switched to Master MFD`);
     }
   };
 
@@ -242,6 +264,9 @@ export default function App() {
 
       {/* Main Workspace */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {currentTab === 'promoter_hq' && <PromoterDashboardView />}
+        {currentTab === 'investor_portal' && <InvestorPortalView />}
+
         {currentTab === 'kyc' && (
           <KycModule
             kycRecords={kycRecords}
