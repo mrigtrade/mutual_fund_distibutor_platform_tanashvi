@@ -310,6 +310,12 @@
     * *BSE StAR MF:* Order routing, client UCC, payment collection, and folio unit settlement.
     * *AMC Monthly Disclosures:* Stock holdings and company weights sourced from SEBI-mandated monthly disclosures (published on the 10th of every month) mapped to active folio units.
   * Branded PDF (`underlying_stocks_<client>.pdf`) and Excel (`underlying_stocks_<client>.xls`) exports.
+* **Dynamic Multi-Fund Comparison Matrix Enhancement (`ResearchView.tsx`):**
+  * Added dynamic scheme selection, in-column swap, and deletion controls for the Fund Comparison matrix.
+  * Allows distributors to add schemes from an extensive library of 14 flagship mutual funds (up to 5 funds simultaneously) or delete columns down to 2 funds.
+  * Added quick one-click category presets: *Flagship Mix*, *Large Cap Bluechips*, *Mid & Small Cap Alpha*, and *Flexi & Multi Cap*.
+  * Added column-level swap dropdowns, trailing returns (1M, 3M, 6M, 1Y, 3Y, 5Y, Inception), 3-year risk-adjusted ratios, and top look-through equity holdings.
+  * Dynamically updates the generated comparison PDF and Excel (.xls) reports.
 
 ---
 

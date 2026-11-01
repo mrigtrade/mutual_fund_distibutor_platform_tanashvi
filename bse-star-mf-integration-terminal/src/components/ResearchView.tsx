@@ -13,7 +13,11 @@ import {
   ArrowRight,
   Info,
   Download,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Plus,
+  Trash2,
+  X,
+  SlidersHorizontal
 } from 'lucide-react';
 import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
 
@@ -510,6 +514,26 @@ export const ResearchView: React.FC = () => {
     }
   }
 
+  // Scheme Selection / Removal for Compare Tab
+  const handleAddScheme = (code: string) => {
+    if (comparedSchemes.includes(code)) return;
+    if (comparedSchemes.length >= 5) return;
+    setComparedSchemes([...comparedSchemes, code]);
+  };
+
+  const handleRemoveScheme = (code: string) => {
+    if (comparedSchemes.length <= 2) {
+      alert('At least 2 mutual fund schemes are required for a side-by-side comparison.');
+      return;
+    }
+    setComparedSchemes(comparedSchemes.filter((c) => c !== code));
+  };
+
+  const handleSwapScheme = (oldCode: string, newCode: string) => {
+    if (oldCode === newCode) return;
+    setComparedSchemes(comparedSchemes.map((c) => (c === oldCode ? newCode : c)));
+  };
+
   // --- Export Handlers ---
   const handleExportResearchPdf = () => {
     let title = 'Mutual Fund Performance & Risk Analysis';
@@ -517,21 +541,22 @@ export const ResearchView: React.FC = () => {
     let rows: (string | number)[][] = [];
 
     if (activeSubTab === 'compare') {
-      title = 'Mutual Fund 4-Way Comparison Report';
-      headers = ['Scheme Name', 'Category', '1Y Return', '3Y Return', '5Y Return', 'Sharpe Ratio', 'Beta', 'Alpha', 'TER'];
-      rows = compareSchemes.map(code => {
+      title = `Mutual Fund Side-by-Side Comparison Report (${comparedSchemes.length} Funds)`;
+      headers = ['Scheme Name', 'Category', 'AUM / TER', '1Y Return', '3Y Return', '5Y Return', 'Sharpe Ratio', 'Beta', 'Alpha', 'Std Dev'];
+      rows = comparedSchemes.map(code => {
         const p = researchProfiles[code];
         if (!p) return [];
         return [
           p.name,
           p.category,
-          `${p.returns.y1}%`,
-          `${p.returns.y3}%`,
-          `${p.returns.y5}%`,
+          `${p.aum} / ${p.ter}`,
+          `+${p.returns.y1}%`,
+          `+${p.returns.y3}%`,
+          `+${p.returns.y5}%`,
           p.risk.sharpe.toFixed(2),
           p.risk.beta.toFixed(2),
-          `${p.risk.alpha.toFixed(2)}%`,
-          p.ter
+          `+${p.risk.alpha.toFixed(2)}%`,
+          `${p.risk.sd.toFixed(2)}%`
         ];
       }).filter(r => r.length > 0);
     } else if (activeSubTab === 'overlap') {
@@ -569,6 +594,11 @@ export const ResearchView: React.FC = () => {
         { label: 'Common Stocks', value: `${commonHoldings.length} Companies` },
         { label: 'Fund A Holdings', value: `${holdingsA.length} Stocks` },
         { label: 'Fund B Holdings', value: `${holdingsB.length} Stocks` }
+      ] : activeSubTab === 'compare' ? [
+        { label: 'Compared Schemes', value: `${comparedSchemes.length} Funds` },
+        { label: 'Benchmark', value: 'Nifty 50 TRI' },
+        { label: 'Risk Free Rate', value: '6.50% (91D T-Bill)' },
+        { label: 'NAV Source', value: 'BSE StAR MF' }
       ] : [
         { label: 'Analytics Engine', value: 'AdvisorKhoj Parity' },
         { label: 'Benchmark', value: 'Nifty 50 TRI' },
@@ -590,20 +620,22 @@ export const ResearchView: React.FC = () => {
     let rows: (string | number)[][] = [];
 
     if (activeSubTab === 'compare') {
-      headers = ['Scheme Name', 'Category', '1Y Return (%)', '3Y Return (%)', '5Y Return (%)', 'Sharpe Ratio', 'Beta', 'Alpha (%)', 'TER'];
-      rows = compareSchemes.map(code => {
+      headers = ['Scheme Name', 'Category', 'AUM', 'TER', '1Y Return (%)', '3Y Return (%)', '5Y Return (%)', 'Sharpe Ratio', 'Beta', 'Alpha (%)', 'Std Dev (%)'];
+      rows = comparedSchemes.map(code => {
         const p = researchProfiles[code];
         if (!p) return [];
         return [
           p.name,
           p.category,
+          p.aum,
+          p.ter,
           p.returns.y1,
           p.returns.y3,
           p.returns.y5,
           p.risk.sharpe,
           p.risk.beta,
           p.risk.alpha,
-          p.ter
+          p.risk.sd
         ];
       }).filter(r => r.length > 0);
     } else {
@@ -1003,29 +1035,195 @@ export const ResearchView: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 3. MULTI-FUND COMPARISON MATRIX (UP TO 4 FUNDS) */}
+      {/* 3. DYNAMIC MULTI-FUND COMPARISON MATRIX (2 TO 5 FUNDS) */}
       {/* ========================================================================= */}
       {activeSubTab === 'compare' && (
         <div className="space-y-6">
-          <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-6 overflow-x-auto">
-            <h3 className="text-base font-semibold text-slate-200 font-serif mb-4 flex items-center gap-2">
-              <GitCompare className="w-5 h-5 text-[#c5a059]" />
-              Side-by-Side Scheme Comparison Matrix (4 Flagship Funds)
-            </h3>
+          {/* Controls Bar: Presets + Dynamic Add/Remove Selector */}
+          <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-5 space-y-4 shadow-lg">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+              <div>
+                <h3 className="text-base font-semibold text-slate-100 font-serif flex items-center gap-2">
+                  <GitCompare className="w-5 h-5 text-[#c5a059]" />
+                  <span>Dynamic Scheme Comparison Matrix ({comparedSchemes.length} of 5 Funds)</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Choose, swap, or delete mutual fund schemes to compare historical trailing returns, risk-adjusted ratios, and fund parameters side-by-side.
+                </p>
+              </div>
 
+              {/* Add Scheme Dropdown */}
+              <div className="flex items-center gap-2">
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleAddScheme(e.target.value);
+                    }
+                  }}
+                  disabled={comparedSchemes.length >= 5}
+                  className="bg-[#0b0f19] border border-[#c5a059]/60 hover:border-[#c5a059] rounded-lg px-3 py-2 text-xs text-[#c5a059] font-medium focus:outline-hidden disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow"
+                >
+                  <option value="">
+                    {comparedSchemes.length >= 5 ? 'Max 5 Funds Reached' : '+ Choose Fund to Add...'}
+                  </option>
+                  {FLAGSHIP_SCHEMES.filter(s => !comparedSchemes.includes(s.code)).map((s) => (
+                    <option key={s.code} value={s.code} className="bg-slate-900 text-slate-200">
+                      {s.name} ({s.category})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Quick Category Presets */}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-slate-400 font-medium flex items-center gap-1.5 mr-1">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#c5a059]" />
+                <span>Quick Presets:</span>
+              </span>
+              <button
+                onClick={() => setComparedSchemes(['122639', '119551', '120503', '100033'])}
+                className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer text-xs"
+              >
+                Flagship Mix
+              </button>
+              <button
+                onClick={() => setComparedSchemes(['119551', '108466', '100033', '145210'])}
+                className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer text-xs"
+              >
+                Large Cap Bluechips
+              </button>
+              <button
+                onClick={() => setComparedSchemes(['120503', '105758', '127042', '145110'])}
+                className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer text-xs"
+              >
+                Mid & Small Cap Alpha
+              </button>
+              <button
+                onClick={() => setComparedSchemes(['122639', '101967', '142890', '135782'])}
+                className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer text-xs"
+              >
+                Flexi & Multi Cap
+              </button>
+            </div>
+
+            {/* Active Schemes Pill Badges with Delete (X) */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mr-1">
+                Active Funds:
+              </span>
+              {comparedSchemes.map((code, idx) => {
+                const profile = researchProfiles[code];
+                return (
+                  <div
+                    key={code}
+                    className="flex items-center gap-2 bg-[#0b0f19] border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white shadow-sm"
+                  >
+                    <span className="w-4 h-4 rounded-full bg-[#c5a059]/20 text-[#c5a059] flex items-center justify-center font-bold text-[10px]">
+                      {idx + 1}
+                    </span>
+                    <span className="font-medium max-w-[200px] truncate" title={profile?.name}>
+                      {profile?.name}
+                    </span>
+                    <button
+                      onClick={() => handleRemoveScheme(code)}
+                      disabled={comparedSchemes.length <= 2}
+                      title={comparedSchemes.length <= 2 ? 'At least 2 funds required for comparison' : `Remove ${profile?.name}`}
+                      className="text-slate-400 hover:text-red-400 transition cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed ml-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Comparison Matrix Table */}
+          <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-6 overflow-x-auto shadow-xl">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 text-slate-400 uppercase tracking-wider">
-                  <th className="py-3 px-4 font-semibold w-48">Parameter</th>
-                  {comparedSchemes.map((code) => (
-                    <th key={code} className="py-3 px-4 font-semibold text-slate-200">
-                      {researchProfiles[code]?.name}
+                  <th className="py-3 px-4 font-semibold w-52 bg-slate-900/60 rounded-tl-lg align-top">
+                    Comparison Parameter
+                  </th>
+                  {comparedSchemes.map((code, idx) => {
+                    const p = researchProfiles[code];
+                    return (
+                      <th key={code} className="py-3 px-4 font-semibold text-slate-200 min-w-[220px] align-top bg-slate-900/30">
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#c5a059]/20 text-[#c5a059] border border-[#c5a059]/30 font-mono font-bold">
+                            Fund #{idx + 1}
+                          </span>
+                          <button
+                            onClick={() => handleRemoveScheme(code)}
+                            disabled={comparedSchemes.length <= 2}
+                            title={comparedSchemes.length <= 2 ? 'At least 2 funds required for comparison' : 'Delete this fund from comparison'}
+                            className="p-1 rounded hover:bg-red-950/60 text-slate-400 hover:text-red-400 transition cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed flex items-center gap-1 text-[10px]"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                        <div className="font-bold text-white text-xs leading-snug line-clamp-2" title={p?.name}>
+                          {p?.name}
+                        </div>
+                        <div className="text-[11px] text-[#c5a059] font-medium mt-0.5">
+                          {p?.category}
+                        </div>
+
+                        {/* Quick Swap Dropdown inside column header */}
+                        <div className="mt-2.5">
+                          <select
+                            value={code}
+                            onChange={(e) => handleSwapScheme(code, e.target.value)}
+                            className="w-full bg-[#0b0f19] border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-hidden hover:border-slate-500 cursor-pointer"
+                          >
+                            <option value={code} disabled>
+                              Swap fund...
+                            </option>
+                            {FLAGSHIP_SCHEMES.filter(s => s.code === code || !comparedSchemes.includes(s.code)).map((s) => (
+                              <option key={s.code} value={s.code} className="bg-slate-900 text-slate-200">
+                                {s.name} ({s.category})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </th>
+                    );
+                  })}
+                  {comparedSchemes.length < 5 && (
+                    <th className="py-3 px-4 min-w-[180px] align-middle bg-slate-900/10 border-l border-dashed border-slate-800 text-center">
+                      <div className="p-3 border border-dashed border-slate-700 rounded-lg bg-[#0b0f19]/60 flex flex-col items-center justify-center gap-2">
+                        <Plus className="w-4 h-4 text-[#c5a059]" />
+                        <span className="text-[11px] text-slate-300 font-medium">Add Fund ({comparedSchemes.length}/5)</span>
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) handleAddScheme(e.target.value);
+                          }}
+                          className="w-full bg-[#0b0f19] border border-slate-700 rounded px-2 py-1 text-[11px] text-[#c5a059] focus:outline-hidden cursor-pointer"
+                        >
+                          <option value="">+ Choose Scheme</option>
+                          {FLAGSHIP_SCHEMES.filter(s => !comparedSchemes.includes(s.code)).map((s) => (
+                            <option key={s.code} value={s.code} className="bg-slate-900 text-slate-200">
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </th>
-                  ))}
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 text-slate-300">
-                {/* AMC & Category */}
+                {/* 1. FUND OVERVIEW */}
+                <tr className="bg-slate-900/40">
+                  <td className="py-2.5 px-4 font-bold text-slate-200 uppercase tracking-wider text-[11px]" colSpan={comparedSchemes.length + 1 + (comparedSchemes.length < 5 ? 1 : 0)}>
+                    Fund Overview & Structure
+                  </td>
+                </tr>
                 <tr>
                   <td className="py-3 px-4 font-medium text-slate-400">Category</td>
                   {comparedSchemes.map((code) => (
@@ -1033,100 +1231,220 @@ export const ResearchView: React.FC = () => {
                       {researchProfiles[code]?.category}
                     </td>
                   ))}
+                  {comparedSchemes.length < 5 && <td className="py-3 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
                 <tr>
-                  <td className="py-3 px-4 font-medium text-slate-400">AUM / TER</td>
+                  <td className="py-3 px-4 font-medium text-slate-400">Fund House (AMC)</td>
                   {comparedSchemes.map((code) => (
-                    <td key={code} className="py-3 px-4">
-                      {researchProfiles[code]?.aum} / <span className="text-slate-400">{researchProfiles[code]?.ter}</span>
+                    <td key={code} className="py-3 px-4 text-slate-300">
+                      {researchProfiles[code]?.amc}
                     </td>
                   ))}
+                  {comparedSchemes.length < 5 && <td className="py-3 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
+                </tr>
+                <tr>
+                  <td className="py-3 px-4 font-medium text-slate-400">AUM / Expense Ratio</td>
+                  {comparedSchemes.map((code) => (
+                    <td key={code} className="py-3 px-4">
+                      <span className="font-semibold text-white">{researchProfiles[code]?.aum}</span> / <span className="text-amber-400 font-mono font-medium">{researchProfiles[code]?.ter} TER</span>
+                    </td>
+                  ))}
+                  {comparedSchemes.length < 5 && <td className="py-3 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
                 <tr>
                   <td className="py-3 px-4 font-medium text-slate-400">Fund Manager</td>
                   {comparedSchemes.map((code) => (
-                    <td key={code} className="py-3 px-4 text-slate-400">
+                    <td key={code} className="py-3 px-4 text-slate-300">
                       {researchProfiles[code]?.manager}
                     </td>
                   ))}
+                  {comparedSchemes.length < 5 && <td className="py-3 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
+                </tr>
+                <tr>
+                  <td className="py-3 px-4 font-medium text-slate-400">Inception Date</td>
+                  {comparedSchemes.map((code) => (
+                    <td key={code} className="py-3 px-4 text-slate-400 font-mono">
+                      {researchProfiles[code]?.inception}
+                    </td>
+                  ))}
+                  {comparedSchemes.length < 5 && <td className="py-3 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
 
-                {/* Trailing Returns */}
+                {/* 2. TRAILING RETURNS */}
                 <tr className="bg-slate-900/40">
-                  <td className="py-2.5 px-4 font-bold text-slate-200" colSpan={comparedSchemes.length + 1}>
-                    Historical Trailing Returns (% Annualized)
+                  <td className="py-2.5 px-4 font-bold text-slate-200 uppercase tracking-wider text-[11px]" colSpan={comparedSchemes.length + 1 + (comparedSchemes.length < 5 ? 1 : 0)}>
+                    Historical Trailing Returns (% Annualized Compounded)
                   </td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">1 Month Return</td>
+                  {comparedSchemes.map((code) => (
+                    <td key={code} className="py-2.5 px-4 font-mono font-bold text-emerald-400">
+                      +{researchProfiles[code]?.returns?.m1}%
+                    </td>
+                  ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">3 Month Return</td>
+                  {comparedSchemes.map((code) => (
+                    <td key={code} className="py-2.5 px-4 font-mono font-bold text-emerald-400">
+                      +{researchProfiles[code]?.returns?.m3}%
+                    </td>
+                  ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">6 Month Return</td>
+                  {comparedSchemes.map((code) => (
+                    <td key={code} className="py-2.5 px-4 font-mono font-bold text-emerald-400">
+                      +{researchProfiles[code]?.returns?.m6}%
+                    </td>
+                  ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
                 <tr>
                   <td className="py-2.5 px-4 font-medium text-slate-400">1 Year Return</td>
                   {comparedSchemes.map((code) => (
-                    <td key={code} className="py-2.5 px-4 font-bold text-emerald-400">
+                    <td key={code} className="py-2.5 px-4 font-mono font-bold text-emerald-400">
                       +{researchProfiles[code]?.returns?.y1}%
                     </td>
                   ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
                 <tr>
                   <td className="py-2.5 px-4 font-medium text-slate-400">3 Year CAGR</td>
                   {comparedSchemes.map((code) => (
-                    <td key={code} className="py-2.5 px-4 font-bold text-emerald-400">
+                    <td key={code} className="py-2.5 px-4 font-mono font-bold text-emerald-400">
                       +{researchProfiles[code]?.returns?.y3}%
                     </td>
                   ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
                 <tr>
                   <td className="py-2.5 px-4 font-medium text-slate-400">5 Year CAGR</td>
                   {comparedSchemes.map((code) => (
-                    <td key={code} className="py-2.5 px-4 font-bold text-emerald-400">
+                    <td key={code} className="py-2.5 px-4 font-mono font-bold text-emerald-400">
                       +{researchProfiles[code]?.returns?.y5}%
                     </td>
                   ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
                 <tr>
                   <td className="py-2.5 px-4 font-medium text-slate-400">Since Inception</td>
                   {comparedSchemes.map((code) => (
-                    <td key={code} className="py-2.5 px-4 font-semibold text-slate-200">
+                    <td key={code} className="py-2.5 px-4 font-mono font-semibold text-slate-200">
                       +{researchProfiles[code]?.returns?.inception}%
                     </td>
                   ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
 
-                {/* Risk Parameters */}
+                {/* 3. RISK RATIOS */}
                 <tr className="bg-slate-900/40">
-                  <td className="py-2.5 px-4 font-bold text-slate-200" colSpan={comparedSchemes.length + 1}>
-                    3-Year Risk-Adjusted Ratios
+                  <td className="py-2.5 px-4 font-bold text-slate-200 uppercase tracking-wider text-[11px]" colSpan={comparedSchemes.length + 1 + (comparedSchemes.length < 5 ? 1 : 0)}>
+                    3-Year Risk-Adjusted & Volatility Metrics (vs Nifty 50 TRI)
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-2.5 px-4 font-medium text-slate-400">Beta</td>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">Beta (Volatility vs Market)</td>
                   {comparedSchemes.map((code) => (
-                    <td key={code} className="py-2.5 px-4 font-semibold text-[#c5a059]">
+                    <td key={code} className="py-2.5 px-4 font-mono font-semibold text-[#c5a059]">
                       {researchProfiles[code]?.risk?.beta}
                     </td>
                   ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
                 <tr>
-                  <td className="py-2.5 px-4 font-medium text-slate-400">Sharpe Ratio</td>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">Sharpe Ratio (Excess / Risk)</td>
                   {comparedSchemes.map((code) => (
-                    <td key={code} className="py-2.5 px-4 font-semibold text-blue-400">
+                    <td key={code} className="py-2.5 px-4 font-mono font-semibold text-blue-400">
                       {researchProfiles[code]?.risk?.sharpe}
                     </td>
                   ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
                 <tr>
-                  <td className="py-2.5 px-4 font-medium text-slate-400">Jensen's Alpha</td>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">Jensen's Alpha (Outperformance)</td>
                   {comparedSchemes.map((code) => (
-                    <td key={code} className="py-2.5 px-4 font-bold text-emerald-400">
+                    <td key={code} className="py-2.5 px-4 font-mono font-bold text-emerald-400">
                       +{researchProfiles[code]?.risk?.alpha}%
                     </td>
                   ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
                 <tr>
-                  <td className="py-2.5 px-4 font-medium text-slate-400">Standard Deviation</td>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">Sortino Ratio (Downside Risk)</td>
                   {comparedSchemes.map((code) => (
-                    <td key={code} className="py-2.5 px-4 text-slate-300">
+                    <td key={code} className="py-2.5 px-4 font-mono font-semibold text-purple-400">
+                      {researchProfiles[code]?.risk?.sortino}
+                    </td>
+                  ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">Standard Deviation (Total Volatility)</td>
+                  {comparedSchemes.map((code) => (
+                    <td key={code} className="py-2.5 px-4 font-mono text-slate-300">
                       {researchProfiles[code]?.risk?.sd}%
                     </td>
                   ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">R-Squared (R²)</td>
+                  {comparedSchemes.map((code) => (
+                    <td key={code} className="py-2.5 px-4 font-mono text-teal-400">
+                      {researchProfiles[code]?.risk?.r2}
+                    </td>
+                  ))}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
+                </tr>
+
+                {/* 4. TOP HOLDINGS */}
+                <tr className="bg-slate-900/40">
+                  <td className="py-2.5 px-4 font-bold text-slate-200 uppercase tracking-wider text-[11px]" colSpan={comparedSchemes.length + 1 + (comparedSchemes.length < 5 ? 1 : 0)}>
+                    Top Look-Through Equity Holdings
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">Top Holding #1</td>
+                  {comparedSchemes.map((code) => {
+                    const h = researchProfiles[code]?.holdings?.[0];
+                    return (
+                      <td key={code} className="py-2.5 px-4">
+                        <div className="font-semibold text-white truncate max-w-[190px]">{h?.name}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">{h?.sector} · {h?.weight}%</div>
+                      </td>
+                    );
+                  })}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">Top Holding #2</td>
+                  {comparedSchemes.map((code) => {
+                    const h = researchProfiles[code]?.holdings?.[1];
+                    return (
+                      <td key={code} className="py-2.5 px-4">
+                        <div className="font-semibold text-white truncate max-w-[190px]">{h?.name}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">{h?.sector} · {h?.weight}%</div>
+                      </td>
+                    );
+                  })}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
+                </tr>
+                <tr>
+                  <td className="py-2.5 px-4 font-medium text-slate-400">Top Holding #3</td>
+                  {comparedSchemes.map((code) => {
+                    const h = researchProfiles[code]?.holdings?.[2];
+                    return (
+                      <td key={code} className="py-2.5 px-4">
+                        <div className="font-semibold text-white truncate max-w-[190px]">{h?.name}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">{h?.sector} · {h?.weight}%</div>
+                      </td>
+                    );
+                  })}
+                  {comparedSchemes.length < 5 && <td className="py-2.5 px-4 border-l border-dashed border-slate-800 text-center text-slate-600">—</td>}
                 </tr>
               </tbody>
             </table>

@@ -624,3 +624,4 @@ export const AumSystematicAnalyticsView: React.FC<AumSystematicAnalyticsViewProp
     </div>
   );
 };
+
