@@ -2,94 +2,235 @@ import React, { useState } from 'react';
 import { PieChart, TrendingUp, ShieldCheck, FileText, CheckCircle2, AlertCircle, Download, ArrowUpRight, DollarSign } from 'lucide-react';
 
 export const PortfolioTaxView: React.FC = () => {
+  const [selectedClient, setSelectedClient] = useState<'ramesh' | 'sunita' | 'vikram'>('ramesh');
   const [selectedFy, setSelectedFy] = useState<'2024-2025' | '2025-2026'>('2024-2025');
   const [activeTab, setActiveTab] = useState<'portfolio' | 'tax' | 'cas'>('tax');
 
-  // Ramesh Sharma Seed Data (matching AdvisorKhoj prompt)
-  const portfolioSummary = {
-    investorName: 'Ramesh Sharma',
-    pan: 'AAAPS1234K',
-    ucc: 'UCC-RAMESH-001',
-    totalInvested: 208926.24,
-    currentValue: 384858.51,
-    absoluteGain: 175932.27,
-    absoluteReturnPct: 84.21,
-    portfolioXirr: 9.46,
-    assetAllocation: {
-      equityPct: 90.98,
-      debtPct: 4.40,
-      liquidPct: 4.62
+  const CLIENTS_DATA: Record<string, any> = {
+    ramesh: {
+      investorName: 'Ramesh Sharma',
+      pan: 'AAAPS1234K',
+      ucc: 'UCC-RAMESH-001',
+      profileBadge: 'Moderate Wealth Creation',
+      totalInvested: 208926.24,
+      currentValue: 384858.51,
+      absoluteGain: 175932.27,
+      absoluteReturnPct: 84.21,
+      portfolioXirr: 15.46,
+      assetAllocation: {
+        equityPct: 90.98,
+        debtPct: 4.40,
+        liquidPct: 4.62
+      },
+      holdings: [
+        { name: 'HDFC Top 100 Fund - Regular Growth', units: 300.0, nav: 985.42, xirr: 14.2, type: 'Large Cap' },
+        { name: 'Parag Parikh Flexi Cap Fund - Regular Growth', units: 695.19, nav: 78.45, xirr: 18.5, type: 'Flexi Cap' },
+        { name: 'HDFC Short Term Debt Fund - Regular Growth', units: 600.0, nav: 28.20, xirr: 7.2, type: 'Debt' },
+        { name: 'ICICI Prudential Liquid Fund - Regular Growth', units: 50.0, nav: 355.50, xirr: 6.8, type: 'Liquid' }
+      ],
+      realizedTaxData: {
+        totalRealizedSales: 237906.50,
+        totalCost: 125200.00,
+        grossGain: 112706.50,
+        equityStcg: { gain: 0, ratePct: 20.0, tax: 0 },
+        equityLtcg: {
+          gain: 97851.50,
+          exemptionApplied: 97851.50, // Out of ₹1,25,000
+          annualLimit: 125000,
+          netTaxable: 0,
+          ratePct: 12.5,
+          tax: 0
+        },
+        debtSec50aa: {
+          gain: 1355.00,
+          ratePct: 30.0,
+          tax: 406.50,
+          note: 'Deemed STCG under Section 50AA (purchased post 01-Apr-2023)'
+        },
+        cessAmount: 16.26,
+        totalTaxLiability: 422.76,
+        fifoLots: [
+          {
+            scheme: 'HDFC Top 100 Fund - Regular Plan - Growth',
+            purchaseDate: '2017-06-15',
+            saleDate: '2024-08-20',
+            units: 200,
+            purchaseNav: 450.00,
+            fmv31Jan2018: 540.00,
+            adjustedCostNav: 540.00,
+            saleNav: 985.42,
+            gainType: 'LTCG',
+            taxRate: '12.5%',
+            gain: 89084.00,
+            isGrandfathered: true
+          },
+          {
+            scheme: 'Parag Parikh Flexi Cap Fund - Regular Plan - Growth',
+            purchaseDate: '2022-01-10',
+            saleDate: '2024-09-05',
+            units: 150,
+            purchaseNav: 50.00,
+            saleNav: 78.45,
+            gainType: 'LTCG',
+            taxRate: '12.5%',
+            gain: 4267.50,
+            isGrandfathered: false
+          },
+          {
+            scheme: 'HDFC Short Term Debt Fund - Regular Plan - Growth',
+            purchaseDate: '2023-05-10',
+            saleDate: '2024-11-15',
+            units: 400,
+            purchaseNav: 25.50,
+            saleNav: 28.20,
+            gainType: 'STCG (Sec 50AA)',
+            taxRate: '30.0% (Slab)',
+            gain: 1355.00,
+            isGrandfathered: false
+          }
+        ]
+      }
+    },
+    sunita: {
+      investorName: 'Sunita Mehta',
+      pan: 'BKMPM4920E',
+      ucc: 'UCC-SUNITA-002',
+      profileBadge: 'Aggressive High Alpha',
+      totalInvested: 820000.00,
+      currentValue: 1452400.00,
+      absoluteGain: 632400.00,
+      absoluteReturnPct: 77.12,
+      portfolioXirr: 24.80,
+      assetAllocation: {
+        equityPct: 95.20,
+        debtPct: 0.00,
+        liquidPct: 4.80
+      },
+      holdings: [
+        { name: 'Nippon India Small Cap Fund - Regular Growth', units: 3100.0, nav: 162.18, xirr: 31.4, type: 'Small Cap' },
+        { name: 'Motilal Oswal Midcap Fund - Regular Growth', units: 4200.0, nav: 105.80, xirr: 32.8, type: 'Mid Cap' },
+        { name: 'Quant Active Fund - Regular Growth', units: 480.0, nav: 685.12, xirr: 28.1, type: 'Multi Cap' },
+        { name: 'Tata Small Cap Fund - Regular Growth', units: 3800.0, nav: 44.80, xirr: 26.5, type: 'Small Cap' }
+      ],
+      realizedTaxData: {
+        totalRealizedSales: 412500.00,
+        totalCost: 220000.00,
+        grossGain: 192500.00,
+        equityStcg: { gain: 32500.00, ratePct: 20.0, tax: 6500.00 },
+        equityLtcg: {
+          gain: 160000.00,
+          exemptionApplied: 125000.00, // Full ₹1,25,000 exemption utilized
+          annualLimit: 125000,
+          netTaxable: 35000.00,
+          ratePct: 12.5,
+          tax: 4375.00
+        },
+        debtSec50aa: { gain: 0, ratePct: 30.0, tax: 0, note: 'No debt holdings redeemed' },
+        cessAmount: 435.00,
+        totalTaxLiability: 11310.00,
+        fifoLots: [
+          {
+            scheme: 'Quant Active Fund - Regular Plan - Growth',
+            purchaseDate: '2023-11-10',
+            saleDate: '2024-08-15',
+            units: 100,
+            purchaseNav: 510.00,
+            saleNav: 685.12,
+            gainType: 'STCG (Held < 12M)',
+            taxRate: '20.0%',
+            gain: 17512.00,
+            isGrandfathered: false
+          },
+          {
+            scheme: 'Nippon India Small Cap Fund - Regular Plan - Growth',
+            purchaseDate: '2021-04-12',
+            saleDate: '2024-09-20',
+            units: 1000,
+            purchaseNav: 65.00,
+            saleNav: 162.18,
+            gainType: 'LTCG',
+            taxRate: '12.5%',
+            gain: 97180.00,
+            isGrandfathered: false
+          }
+        ]
+      }
+    },
+    vikram: {
+      investorName: 'Col. Vikramaditya Rathore',
+      pan: 'ACZPR8102J',
+      ucc: 'UCC-VIKRAM-003',
+      profileBadge: 'Conservative Retirement Cashflow',
+      totalInvested: 3500000.00,
+      currentValue: 4820500.00,
+      absoluteGain: 1320500.00,
+      absoluteReturnPct: 37.73,
+      portfolioXirr: 11.20,
+      assetAllocation: {
+        equityPct: 42.50,
+        debtPct: 45.20,
+        liquidPct: 12.30
+      },
+      holdings: [
+        { name: 'ICICI Prudential Balanced Advantage Fund - Regular Growth', units: 26000.0, nav: 78.45, xirr: 13.9, type: 'Hybrid BAF' },
+        { name: 'SBI Bluechip Fund - Regular Growth', units: 15000.0, nav: 98.45, xirr: 14.8, type: 'Large Cap' },
+        { name: 'ICICI Prudential All Seasons Bond Fund - Regular Growth', units: 58000.0, nav: 36.80, xirr: 7.9, type: 'Debt' },
+        { name: 'HDFC Liquid Fund - Regular Growth', units: 120.0, nav: 4890.20, xirr: 6.9, type: 'Liquid' }
+      ],
+      realizedTaxData: {
+        totalRealizedSales: 420000.00, // Monthly SWP totaling 4.2 Lakhs
+        totalCost: 340000.00,
+        grossGain: 80000.00,
+        equityStcg: { gain: 0, ratePct: 20.0, tax: 0 },
+        equityLtcg: {
+          gain: 55000.00,
+          exemptionApplied: 55000.00, // Fully exempt under ₹1.25L
+          annualLimit: 125000,
+          netTaxable: 0,
+          ratePct: 12.5,
+          tax: 0
+        },
+        debtSec50aa: {
+          gain: 25000.00,
+          ratePct: 30.0,
+          tax: 7500.00,
+          note: 'SWP redemptions from Debt fund purchased after 01-Apr-2023'
+        },
+        cessAmount: 300.00,
+        totalTaxLiability: 7800.00,
+        fifoLots: [
+          {
+            scheme: 'ICICI Prudential Balanced Advantage Fund - Growth',
+            purchaseDate: '2020-03-25',
+            saleDate: '2024-10-01',
+            units: 1200,
+            purchaseNav: 42.00,
+            saleNav: 78.45,
+            gainType: 'LTCG (SWP)',
+            taxRate: '12.5%',
+            gain: 43740.00,
+            isGrandfathered: false
+          },
+          {
+            scheme: 'ICICI Prudential All Seasons Bond Fund - Growth',
+            purchaseDate: '2023-04-15',
+            saleDate: '2024-10-01',
+            units: 3000,
+            purchaseNav: 31.00,
+            saleNav: 36.80,
+            gainType: 'STCG (Sec 50AA SWP)',
+            taxRate: '30.0%',
+            gain: 17400.00,
+            isGrandfathered: false
+          }
+        ]
+      }
     }
   };
 
-  const realizedTaxData = {
-    fy: selectedFy,
-    regime: 'BUDGET_2024',
-    totalRealizedSales: 237906.50,
-    totalCost: 125200.00,
-    grossGain: 112706.50,
-    equityStcg: {
-      gain: 0,
-      ratePct: 20.0,
-      tax: 0
-    },
-    equityLtcg: {
-      gain: 97851.50,
-      exemptionApplied: 97851.50, // Out of ₹1,25,000
-      annualLimit: 125000,
-      netTaxable: 0,
-      ratePct: 12.5,
-      tax: 0
-    },
-    debtSec50aa: {
-      gain: 1355.00,
-      ratePct: 30.0,
-      tax: 406.50,
-      note: 'Deemed STCG under Section 50AA (purchased post 01-Apr-2023)'
-    },
-    cessAmount: 16.26,
-    totalTaxLiability: 422.76,
-    fifoLots: [
-      {
-        scheme: 'HDFC Top 100 Fund - Regular Plan - Growth',
-        purchaseDate: '2017-06-15',
-        saleDate: '2024-08-20',
-        units: 200,
-        purchaseNav: 450.00,
-        fmv31Jan2018: 540.00,
-        adjustedCostNav: 540.00,
-        saleNav: 985.42,
-        gainType: 'LTCG',
-        taxRate: '12.5%',
-        gain: 89084.00,
-        isGrandfathered: true
-      },
-      {
-        scheme: 'Parag Parikh Flexi Cap Fund - Regular Plan - Growth',
-        purchaseDate: '2022-01-10',
-        saleDate: '2024-09-05',
-        units: 150,
-        purchaseNav: 50.00,
-        saleNav: 78.45,
-        gainType: 'LTCG',
-        taxRate: '12.5%',
-        gain: 4267.50,
-        isGrandfathered: false
-      },
-      {
-        scheme: 'HDFC Short Term Debt Fund - Regular Plan - Growth',
-        purchaseDate: '2023-05-10',
-        saleDate: '2024-11-15',
-        units: 400,
-        purchaseNav: 25.50,
-        saleNav: 28.20,
-        gainType: 'STCG (Sec 50AA)',
-        taxRate: '30.0% (Slab)',
-        gain: 1355.00,
-        isGrandfathered: false
-      }
-    ]
-  };
+  const activeClientData = CLIENTS_DATA[selectedClient];
+  const portfolioSummary = activeClientData;
+  const realizedTaxData = activeClientData.realizedTaxData;
 
   const formatInr = (val: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -102,7 +243,52 @@ export const PortfolioTaxView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Banner (AdvisorKhoj Feature Banner) */}
-      <div className="p-6 rounded-xl bg-gradient-to-r from-[#0a192f] via-[#0d213f] to-[#0a192f] border border-[#c5a059]/40 shadow-xl">
+      <div className="p-6 rounded-xl bg-gradient-to-r from-[#0a192f] via-[#0d213f] to-[#0a192f] border border-[#c5a059]/40 shadow-xl space-y-4">
+        {/* Client Switcher Pill Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[#c5a059] uppercase tracking-wider font-semibold font-serif">
+              Investor Portfolio:
+            </span>
+            <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+              <button
+                onClick={() => setSelectedClient('ramesh')}
+                className={`px-3 py-1 rounded font-medium transition cursor-pointer ${
+                  selectedClient === 'ramesh'
+                    ? 'bg-[#c5a059] text-slate-950 font-bold shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Ramesh Sharma (Core)
+              </button>
+              <button
+                onClick={() => setSelectedClient('sunita')}
+                className={`px-3 py-1 rounded font-medium transition cursor-pointer ${
+                  selectedClient === 'sunita'
+                    ? 'bg-[#c5a059] text-slate-950 font-bold shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Sunita Mehta (Alpha)
+              </button>
+              <button
+                onClick={() => setSelectedClient('vikram')}
+                className={`px-3 py-1 rounded font-medium transition cursor-pointer ${
+                  selectedClient === 'vikram'
+                    ? 'bg-[#c5a059] text-slate-950 font-bold shadow'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Col. Vikramaditya (SWP)
+              </button>
+            </div>
+          </div>
+
+          <span className="text-xs text-slate-400 font-mono">
+            Profile: <strong className="text-white">{portfolioSummary.profileBadge}</strong>
+          </span>
+        </div>
+
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-[#c5a059]/10 border border-[#c5a059]/30 flex items-center justify-center text-[#c5a059]">
@@ -328,51 +514,36 @@ export const PortfolioTaxView: React.FC = () => {
           </div>
 
           <div className="lg:col-span-2 p-6 rounded-xl bg-slate-900/90 border border-slate-800 space-y-4">
-            <h3 className="text-sm font-serif font-bold text-white">Current Active Holdings</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-serif font-bold text-white">Current Active Holdings</h3>
+              <span className="text-xs text-slate-400 font-mono">
+                {activeClientData.holdings.length} Active Schemes
+              </span>
+            </div>
             <div className="space-y-3 text-xs">
-              <div className="p-3 bg-slate-950/60 rounded-lg border border-slate-800 flex items-center justify-between">
-                <div>
-                  <span className="font-semibold text-white block">HDFC Top 100 Fund - Regular Growth</span>
-                  <span className="text-slate-400">300.00 units · Latest NAV ₹985.42</span>
+              {activeClientData.holdings.map((h: any, idx: number) => (
+                <div key={idx} className="p-3.5 bg-slate-950/70 rounded-lg border border-slate-800 flex items-center justify-between gap-4 hover:border-slate-700 transition">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-white block">{h.name}</span>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-slate-800 text-slate-300 font-mono">
+                        {h.type}
+                      </span>
+                    </div>
+                    <span className="text-slate-400 block mt-0.5">
+                      {h.units.toFixed(2)} units · Latest NAV ₹{h.nav.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="text-right font-mono shrink-0">
+                    <span className="text-white font-bold block text-sm">
+                      {formatInr(h.units * h.nav)}
+                    </span>
+                    <span className={`text-[11px] font-semibold ${h.xirr >= 15 ? 'text-emerald-400' : h.xirr >= 10 ? 'text-teal-400' : 'text-sky-400'}`}>
+                      XIRR: {h.xirr}% p.a.
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right font-mono">
-                  <span className="text-white font-bold block">{formatInr(300 * 985.42)}</span>
-                  <span className="text-emerald-400">XIRR: 14.2%</span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-950/60 rounded-lg border border-slate-800 flex items-center justify-between">
-                <div>
-                  <span className="font-semibold text-white block">Parag Parikh Flexi Cap Fund - Regular Growth</span>
-                  <span className="text-slate-400">695.19 units · Latest NAV ₹78.45</span>
-                </div>
-                <div className="text-right font-mono">
-                  <span className="text-white font-bold block">{formatInr(695.19 * 78.45)}</span>
-                  <span className="text-emerald-400">XIRR: 18.5%</span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-950/60 rounded-lg border border-slate-800 flex items-center justify-between">
-                <div>
-                  <span className="font-semibold text-white block">HDFC Short Term Debt Fund - Regular Growth</span>
-                  <span className="text-slate-400">600.00 units · Latest NAV ₹28.20</span>
-                </div>
-                <div className="text-right font-mono">
-                  <span className="text-white font-bold block">{formatInr(600 * 28.20)}</span>
-                  <span className="text-sky-400">XIRR: 7.2%</span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-950/60 rounded-lg border border-slate-800 flex items-center justify-between">
-                <div>
-                  <span className="font-semibold text-white block">ICICI Prudential Liquid Fund - Regular Growth</span>
-                  <span className="text-slate-400">50.00 units · Latest NAV ₹355.50</span>
-                </div>
-                <div className="text-right font-mono">
-                  <span className="text-white font-bold block">{formatInr(50 * 355.50)}</span>
-                  <span className="text-emerald-400">XIRR: 6.8%</span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>

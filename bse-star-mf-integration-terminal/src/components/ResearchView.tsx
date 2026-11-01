@@ -24,9 +24,18 @@ interface SchemeInfo {
 const FLAGSHIP_SCHEMES: SchemeInfo[] = [
   { code: '122639', name: 'Parag Parikh Flexi Cap Fund - Regular Plan - Growth', category: 'Flexi Cap Fund', amc: 'PPFAS Mutual Fund' },
   { code: '119551', name: 'HDFC Top 100 Fund - Regular Plan - Growth', category: 'Large Cap Fund', amc: 'HDFC Mutual Fund' },
-  { code: '120503', name: 'Nippon India Small Cap Fund - Regular Plan - Growth', category: 'Small Cap Fund', amc: 'Nippon India Mutual Fund' },
+  { code: '108466', name: 'ICICI Prudential Bluechip Fund - Regular Plan - Growth', category: 'Large Cap Fund', amc: 'ICICI Prudential Mutual Fund' },
   { code: '100033', name: 'SBI Bluechip Fund - Regular Plan - Growth', category: 'Large Cap Fund', amc: 'SBI Mutual Fund' },
-  { code: '118989', name: 'ICICI Prudential Value Discovery Fund - Regular Plan - Growth', category: 'Value Fund', amc: 'ICICI Prudential Mutual Fund' }
+  { code: '101967', name: 'Kotak Flexicap Fund - Regular Plan - Growth', category: 'Flexi Cap Fund', amc: 'Kotak Mahindra Mutual Fund' },
+  { code: '142890', name: 'Quant Active Fund - Regular Plan - Growth', category: 'Multi Cap Fund', amc: 'Quant Mutual Fund' },
+  { code: '135782', name: 'Mirae Asset Large & Midcap Fund - Regular Plan - Growth', category: 'Large & Mid Cap Fund', amc: 'Mirae Asset Mutual Fund' },
+  { code: '105758', name: 'HDFC Mid-Cap Opportunities Fund - Regular Plan - Growth', category: 'Mid Cap Fund', amc: 'HDFC Mutual Fund' },
+  { code: '127042', name: 'Motilal Oswal Midcap Fund - Regular Plan - Growth', category: 'Mid Cap Fund', amc: 'Motilal Oswal Mutual Fund' },
+  { code: '120503', name: 'Nippon India Small Cap Fund - Regular Plan - Growth', category: 'Small Cap Fund', amc: 'Nippon India Mutual Fund' },
+  { code: '145110', name: 'Tata Small Cap Fund - Regular Plan - Growth', category: 'Small Cap Fund', amc: 'Tata Mutual Fund' },
+  { code: '118989', name: 'ICICI Prudential Value Discovery Fund - Regular Plan - Growth', category: 'Value Fund', amc: 'ICICI Prudential Mutual Fund' },
+  { code: '103303', name: 'ICICI Prudential Balanced Advantage Fund - Regular Plan - Growth', category: 'Hybrid BAF', amc: 'ICICI Prudential Mutual Fund' },
+  { code: '145210', name: 'UTI Nifty 50 Index Fund - Regular Plan - Growth', category: 'Index Fund', amc: 'UTI Mutual Fund' }
 ];
 
 export const ResearchView: React.FC = () => {
@@ -199,6 +208,276 @@ export const ResearchView: React.FC = () => {
         { name: 'ONGC Ltd.', sector: 'Oil & Gas', weight: 6.80 },
         { name: 'Infosys Ltd.', sector: 'Technology', weight: 5.90 },
         { name: 'State Bank of India', sector: 'Financial Services', weight: 5.20 }
+      ]
+    },
+    '108466': {
+      code: '108466',
+      name: 'ICICI Prudential Bluechip Fund - Growth',
+      category: 'Large Cap Fund',
+      amc: 'ICICI Prudential Mutual Fund',
+      aum: '₹58,400 Cr',
+      ter: '1.45%',
+      manager: 'Anish Tawakley, Vaibhav Dusad',
+      inception: '23-May-2008',
+      returns: { m1: 1.15, m3: 3.40, m6: 9.20, y1: 24.20, y3: 18.20, y5: 19.10, inception: 16.40 },
+      risk: { sd: 13.80, sharpe: 0.95, beta: 0.95, alpha: 2.40, sortino: 1.55, r2: 0.94 },
+      rolling3Y: {
+        avg: 24.80,
+        median: 25.10,
+        min: 7.90,
+        max: 39.20,
+        benchmarkAvg: 26.89,
+        benchmarkMin: 9.55,
+        benchmarkMax: 44.79,
+        dist: { neg: 0.0, zeroToEight: 1.5, eightToTwelve: 7.8, twelveToFifteen: 16.4, aboveFifteen: 74.3 }
+      },
+      holdings: [
+        { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 9.40 },
+        { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 8.90 },
+        { name: 'Reliance Industries Ltd.', sector: 'Oil & Gas', weight: 7.60 },
+        { name: 'Infosys Ltd.', sector: 'Technology', weight: 6.80 },
+        { name: 'Larsen & Toubro Ltd.', sector: 'Construction', weight: 5.50 },
+        { name: 'Bharti Airtel Ltd.', sector: 'Telecommunication', weight: 4.80 }
+      ]
+    },
+    '101967': {
+      code: '101967',
+      name: 'Kotak Flexicap Fund - Growth',
+      category: 'Flexi Cap Fund',
+      amc: 'Kotak Mahindra Mutual Fund',
+      aum: '₹49,800 Cr',
+      ter: '1.48%',
+      manager: 'Harsha Upadhyaya',
+      inception: '11-Sep-2009',
+      returns: { m1: 1.30, m3: 3.80, m6: 10.40, y1: 25.80, y3: 19.40, y5: 20.20, inception: 15.80 },
+      risk: { sd: 13.90, sharpe: 1.05, beta: 0.92, alpha: 3.10, sortino: 1.68, r2: 0.91 },
+      rolling3Y: {
+        avg: 25.40,
+        median: 26.10,
+        min: 8.20,
+        max: 40.50,
+        benchmarkAvg: 26.89,
+        benchmarkMin: 9.55,
+        benchmarkMax: 44.79,
+        dist: { neg: 0.0, zeroToEight: 0.8, eightToTwelve: 6.5, twelveToFifteen: 15.2, aboveFifteen: 77.5 }
+      },
+      holdings: [
+        { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 8.80 },
+        { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 7.40 },
+        { name: 'Reliance Industries Ltd.', sector: 'Oil & Gas', weight: 6.50 },
+        { name: 'Larsen & Toubro Ltd.', sector: 'Construction', weight: 5.20 },
+        { name: 'Infosys Ltd.', sector: 'Technology', weight: 4.90 },
+        { name: 'Maruti Suzuki India Ltd.', sector: 'Automobile', weight: 3.80 }
+      ]
+    },
+    '142890': {
+      code: '142890',
+      name: 'Quant Active Fund - Growth',
+      category: 'Multi Cap Fund',
+      amc: 'Quant Mutual Fund',
+      aum: '₹12,400 Cr',
+      ter: '1.65%',
+      manager: 'Sandeep Tandon, Ankit Pande',
+      inception: '15-Mar-2001',
+      returns: { m1: 2.80, m3: 6.20, m6: 16.80, y1: 38.60, y3: 28.50, y5: 30.10, inception: 20.50 },
+      risk: { sd: 17.80, sharpe: 1.42, beta: 1.08, alpha: 9.80, sortino: 2.45, r2: 0.74 },
+      rolling3Y: {
+        avg: 34.80,
+        median: 35.60,
+        min: 12.40,
+        max: 54.20,
+        benchmarkAvg: 26.89,
+        benchmarkMin: 9.55,
+        benchmarkMax: 44.79,
+        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 0.5, twelveToFifteen: 3.2, aboveFifteen: 96.3 }
+      },
+      holdings: [
+        { name: 'Reliance Industries Ltd.', sector: 'Oil & Gas', weight: 8.90 },
+        { name: 'Jio Financial Services Ltd.', sector: 'Financial Services', weight: 6.80 },
+        { name: 'Adani Power Ltd.', sector: 'Power & Energy', weight: 5.40 },
+        { name: 'Steel Authority of India Ltd.', sector: 'Metals & Mining', weight: 4.90 },
+        { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 4.20 },
+        { name: 'Tata Power Company Ltd.', sector: 'Power & Energy', weight: 3.80 }
+      ]
+    },
+    '135782': {
+      code: '135782',
+      name: 'Mirae Asset Large & Midcap Fund - Growth',
+      category: 'Large & Mid Cap Fund',
+      amc: 'Mirae Asset Mutual Fund',
+      aum: '₹41,200 Cr',
+      ter: '1.42%',
+      manager: 'Neelesh Surana, Ankit Jain',
+      inception: '09-Jul-2010',
+      returns: { m1: 1.65, m3: 4.50, m6: 12.10, y1: 29.30, y3: 22.10, y5: 21.60, inception: 18.20 },
+      risk: { sd: 14.80, sharpe: 1.22, beta: 0.94, alpha: 4.80, sortino: 1.95, r2: 0.88 },
+      rolling3Y: {
+        avg: 29.10,
+        median: 29.80,
+        min: 9.80,
+        max: 45.10,
+        benchmarkAvg: 26.89,
+        benchmarkMin: 9.55,
+        benchmarkMax: 44.79,
+        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 2.8, twelveToFifteen: 11.4, aboveFifteen: 85.8 }
+      },
+      holdings: [
+        { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 7.80 },
+        { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 6.90 },
+        { name: 'Reliance Industries Ltd.', sector: 'Oil & Gas', weight: 5.80 },
+        { name: 'Infosys Ltd.', sector: 'Technology', weight: 4.50 },
+        { name: 'Federal Bank Ltd.', sector: 'Financial Services', weight: 3.80 },
+        { name: 'Bharat Electronics Ltd.', sector: 'Capital Goods', weight: 3.40 }
+      ]
+    },
+    '105758': {
+      code: '105758',
+      name: 'HDFC Mid-Cap Opportunities Fund - Growth',
+      category: 'Mid Cap Fund',
+      amc: 'HDFC Mutual Fund',
+      aum: '₹72,400 Cr',
+      ter: '1.44%',
+      manager: 'Chirag Setalvad',
+      inception: '25-Jun-2007',
+      returns: { m1: 2.10, m3: 5.20, m6: 14.80, y1: 36.80, y3: 27.40, y5: 26.50, inception: 19.80 },
+      risk: { sd: 15.60, sharpe: 1.35, beta: 0.88, alpha: 7.20, sortino: 2.20, r2: 0.82 },
+      rolling3Y: {
+        avg: 33.20,
+        median: 34.00,
+        min: 11.80,
+        max: 51.40,
+        benchmarkAvg: 26.89,
+        benchmarkMin: 9.55,
+        benchmarkMax: 44.79,
+        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 1.2, twelveToFifteen: 6.5, aboveFifteen: 92.3 }
+      },
+      holdings: [
+        { name: 'Indian Hotels Company Ltd.', sector: 'Services', weight: 4.80 },
+        { name: 'Tata Communications Ltd.', sector: 'Telecommunication', weight: 4.20 },
+        { name: 'Federal Bank Ltd.', sector: 'Financial Services', weight: 3.90 },
+        { name: 'Max Financial Services Ltd.', sector: 'Financial Services', weight: 3.60 },
+        { name: 'Coforge Ltd.', sector: 'Technology', weight: 3.40 },
+        { name: 'Apollo Tyres Ltd.', sector: 'Automobile', weight: 3.10 }
+      ]
+    },
+    '127042': {
+      code: '127042',
+      name: 'Motilal Oswal Midcap Fund - Growth',
+      category: 'Mid Cap Fund',
+      amc: 'Motilal Oswal Mutual Fund',
+      aum: '₹18,900 Cr',
+      ter: '1.58%',
+      manager: 'Niket Shah',
+      inception: '24-Feb-2014',
+      returns: { m1: 2.60, m3: 6.10, m6: 17.50, y1: 42.50, y3: 32.10, y5: 28.90, inception: 21.20 },
+      risk: { sd: 17.20, sharpe: 1.54, beta: 0.90, alpha: 10.40, sortino: 2.60, r2: 0.78 },
+      rolling3Y: {
+        avg: 37.50,
+        median: 38.20,
+        min: 13.50,
+        max: 58.20,
+        benchmarkAvg: 26.89,
+        benchmarkMin: 9.55,
+        benchmarkMax: 44.79,
+        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 0.0, twelveToFifteen: 2.1, aboveFifteen: 97.9 }
+      },
+      holdings: [
+        { name: 'Jio Financial Services Ltd.', sector: 'Financial Services', weight: 7.20 },
+        { name: 'Persistent Systems Ltd.', sector: 'Technology', weight: 6.40 },
+        { name: 'Trent Ltd.', sector: 'Consumer Services', weight: 5.80 },
+        { name: 'Coforge Ltd.', sector: 'Technology', weight: 5.10 },
+        { name: 'Vodafone Idea Ltd.', sector: 'Telecommunication', weight: 4.60 },
+        { name: 'Kalyan Jewellers India Ltd.', sector: 'Consumer Services', weight: 4.20 }
+      ]
+    },
+    '145110': {
+      code: '145110',
+      name: 'Tata Small Cap Fund - Growth',
+      category: 'Small Cap Fund',
+      amc: 'Tata Mutual Fund',
+      aum: '₹9,800 Cr',
+      ter: '1.52%',
+      manager: 'Chandraprakash Padiyar',
+      inception: '12-Nov-2018',
+      returns: { m1: 2.40, m3: 5.60, m6: 15.10, y1: 38.90, y3: 28.40, y5: 29.10, inception: 23.40 },
+      risk: { sd: 17.40, sharpe: 1.38, beta: 0.85, alpha: 9.20, sortino: 2.35, r2: 0.72 },
+      rolling3Y: {
+        avg: 35.10,
+        median: 35.80,
+        min: 12.80,
+        max: 53.90,
+        benchmarkAvg: 26.89,
+        benchmarkMin: 9.55,
+        benchmarkMax: 44.79,
+        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 0.0, twelveToFifteen: 2.5, aboveFifteen: 97.5 }
+      },
+      holdings: [
+        { name: 'Quess Corp Ltd.', sector: 'Services', weight: 3.80 },
+        { name: 'IDFC Ltd.', sector: 'Financial Services', weight: 3.40 },
+        { name: 'Radico Khaitan Ltd.', sector: 'FMCG', weight: 3.20 },
+        { name: 'Allcargo Logistics Ltd.', sector: 'Services', weight: 2.90 },
+        { name: 'Kirloskar Pneumatic Company Ltd.', sector: 'Capital Goods', weight: 2.70 },
+        { name: 'Basf India Ltd.', sector: 'Chemicals', weight: 2.50 }
+      ]
+    },
+    '103303': {
+      code: '103303',
+      name: 'ICICI Prudential Balanced Advantage Fund - Growth',
+      category: 'Hybrid BAF',
+      amc: 'ICICI Prudential Mutual Fund',
+      aum: '₹62,100 Cr',
+      ter: '1.55%',
+      manager: 'Sankaran Naren, Rajat Chandak',
+      inception: '30-Dec-2006',
+      returns: { m1: 0.85, m3: 2.50, m6: 7.20, y1: 18.20, y3: 14.80, y5: 15.20, inception: 13.90 },
+      risk: { sd: 9.40, sharpe: 1.12, beta: 0.58, alpha: 3.40, sortino: 2.10, r2: 0.89 },
+      rolling3Y: {
+        avg: 17.80,
+        median: 18.20,
+        min: 6.40,
+        max: 27.50,
+        benchmarkAvg: 26.89,
+        benchmarkMin: 9.55,
+        benchmarkMax: 44.79,
+        dist: { neg: 0.0, zeroToEight: 2.4, eightToTwelve: 14.2, twelveToFifteen: 32.5, aboveFifteen: 50.9 }
+      },
+      holdings: [
+        { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 6.80 },
+        { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 5.90 },
+        { name: 'Reliance Industries Ltd.', sector: 'Oil & Gas', weight: 4.80 },
+        { name: 'Infosys Ltd.', sector: 'Technology', weight: 4.10 },
+        { name: 'Government of India 7.18% 2033 (G-Sec)', sector: 'Sovereign Debt', weight: 14.50 },
+        { name: 'TREPS / Derivatives Net Hedge', sector: 'Cash & Arbitrage', weight: 28.20 }
+      ]
+    },
+    '145210': {
+      code: '145210',
+      name: 'UTI Nifty 50 Index Fund - Growth',
+      category: 'Index Fund',
+      amc: 'UTI Mutual Fund',
+      aum: '₹18,400 Cr',
+      ter: '0.28%',
+      manager: 'Sharwan Kumar Goyal',
+      inception: '06-Mar-2000',
+      returns: { m1: 1.20, m3: 3.60, m6: 9.40, y1: 24.50, y3: 17.20, y5: 18.10, inception: 14.90 },
+      risk: { sd: 15.20, sharpe: 0.85, beta: 1.00, alpha: -0.28, sortino: 1.38, r2: 1.00 },
+      rolling3Y: {
+        avg: 26.89,
+        median: 26.48,
+        min: 9.55,
+        max: 44.79,
+        benchmarkAvg: 26.89,
+        benchmarkMin: 9.55,
+        benchmarkMax: 44.79,
+        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 5.8, twelveToFifteen: 18.2, aboveFifteen: 76.0 }
+      },
+      holdings: [
+        { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 11.50 },
+        { name: 'Reliance Industries Ltd.', sector: 'Oil & Gas', weight: 9.20 },
+        { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 7.90 },
+        { name: 'Infosys Ltd.', sector: 'Technology', weight: 5.80 },
+        { name: 'Larsen & Toubro Ltd.', sector: 'Construction', weight: 4.30 },
+        { name: 'ITC Ltd.', sector: 'FMCG', weight: 3.90 }
       ]
     }
   };

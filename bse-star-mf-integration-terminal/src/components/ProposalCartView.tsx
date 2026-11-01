@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Link, Send, CheckCircle2, ArrowRight, ShieldCheck, Copy, ExternalLink, RefreshCw } from 'lucide-react';
+import { ShoppingCart, Plus, Link, Send, CheckCircle2, ArrowRight, ShieldCheck, Copy, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
+import { MOCK_SCHEMES } from '../data/mockBseData';
 
 export const ProposalCartView: React.FC = () => {
   const [clientCode, setClientCode] = useState('UCC-RAMESH-001');
@@ -7,6 +8,12 @@ export const ProposalCartView: React.FC = () => {
   const [proposalTitle, setProposalTitle] = useState('2026 Core Wealth Creation Basket');
   const [mfdArn] = useState('ARN-347849');
   const [mfdEuin] = useState('E123456');
+
+  // New item draft state
+  const [selectedSchemeCode, setSelectedSchemeCode] = useState(MOCK_SCHEMES[0].schemeCode);
+  const [newItemType, setNewItemType] = useState<'LUMPSUM' | 'SIP'>('SIP');
+  const [newItemAmount, setNewItemAmount] = useState(5000);
+  const [newItemSipDay, setNewItemSipDay] = useState(10);
 
   const [items, setItems] = useState<Array<{
     type: 'LUMPSUM' | 'SIP';
@@ -17,13 +24,13 @@ export const ProposalCartView: React.FC = () => {
   }>>([
     {
       type: 'LUMPSUM',
-      schemeName: 'HDFC Top 100 Fund - Regular Plan - Growth',
-      schemeCode: '101968',
+      schemeName: 'HDFC Top 100 Fund - Direct Plan - Growth',
+      schemeCode: '119551',
       amount: 25000
     },
     {
       type: 'SIP',
-      schemeName: 'Parag Parikh Flexi Cap Fund - Regular Plan - Growth',
+      schemeName: 'Parag Parikh Flexi Cap Fund - Direct Plan - Growth',
       schemeCode: '122639',
       amount: 10000,
       sipDay: 10
@@ -49,6 +56,25 @@ export const ProposalCartView: React.FC = () => {
   const totalSip = items
     .filter(i => i.type === 'SIP')
     .reduce((sum, i) => sum + i.amount, 0);
+
+  const handleAddItem = () => {
+    const scheme = MOCK_SCHEMES.find(s => s.schemeCode === selectedSchemeCode);
+    if (!scheme) return;
+    setItems([
+      ...items,
+      {
+        type: newItemType,
+        schemeName: scheme.schemeName,
+        schemeCode: scheme.schemeCode,
+        amount: Number(newItemAmount),
+        sipDay: newItemType === 'SIP' ? newItemSipDay : undefined
+      }
+    ]);
+  };
+
+  const handleRemoveItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
 
   const handleGenerateLink = () => {
     const proposalId = `PROP-${Date.now().toString().slice(-6)}`;
@@ -184,11 +210,74 @@ export const ProposalCartView: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="text-right font-mono font-bold text-white text-sm">
-                    {formatInr(it.amount)}
+                  <div className="flex items-center gap-3">
+                    <div className="text-right font-mono font-bold text-white text-sm">
+                      {formatInr(it.amount)}
+                    </div>
+                    <button
+                      onClick={() => handleRemoveItem(idx)}
+                      className="p-1 text-slate-500 hover:text-red-400 transition cursor-pointer"
+                      title="Remove scheme"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Quick Add Scheme Form */}
+            <div className="p-4 bg-slate-950/90 border border-slate-800 rounded-lg space-y-3">
+              <span className="text-xs font-semibold text-[#c5a059] uppercase tracking-wider block">
+                + Add Scheme to Basket
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                <div className="sm:col-span-6">
+                  <select
+                    value={selectedSchemeCode}
+                    onChange={(e) => setSelectedSchemeCode(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-white text-xs"
+                  >
+                    {MOCK_SCHEMES.map((s) => (
+                      <option key={s.schemeCode} value={s.schemeCode}>
+                        {s.schemeName} ({s.category})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <select
+                    value={newItemType}
+                    onChange={(e) => setNewItemType(e.target.value as any)}
+                    className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-white text-xs"
+                  >
+                    <option value="SIP">SIP</option>
+                    <option value="LUMPSUM">Lumpsum</option>
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <input
+                    type="number"
+                    value={newItemAmount}
+                    onChange={(e) => setNewItemAmount(Number(e.target.value))}
+                    step="500"
+                    placeholder="Amount ₹"
+                    className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-white text-xs font-mono"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <button
+                    onClick={handleAddItem}
+                    className="w-full py-1.5 px-3 rounded bg-slate-800 hover:bg-[#c5a059] hover:text-slate-950 text-slate-200 text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Totals & Action */}
