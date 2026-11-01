@@ -264,9 +264,12 @@
 ## 📌 Quick Context & Key Credentials Reference
 
 * **Entity:** Tanashvi Fintech Private Limited
+* **Brand:** Tanashvi | **Motto:** भवतः हिताय
+* **Website:** https://www.tanashvi.in
 * **BSE Member Code:** `714114`
 * **AMFI ARN:** `ARN-347849`
+* **GitHub Repository:** `https://github.com/mrigtrade/mutual_fund_distibutor_platform_tanashvi.git`
 * **Target Live Gateway (Future):** `https://v2.bsestarmf.in/api`
 * **Target QA Gateway:** `https://qa.starmfv2.remiges.tech/api`
 * **AMFI NAV Open URL:** `https://www.amfiindia.com/spages/NAVAll.txt`
-* **Local Test Suite:** `npm test` runs all 8 test benches (`test:jose`, `test:mock`, `test:webhook`, `test:api`, `test:calculators`, `test:schemes`, `test:portfolio`, `test:proposal`) with 100% green pass.
+* **Local Test Suite:** `npm test` runs all 9 test suites (`test:jose`, `test:mock`, `test:webhook`, `test:api`, `test:calculators`, `test:schemes`, `test:portfolio`, `test:proposal`, `test:research`) with 100% green pass.

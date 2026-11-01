@@ -24,3 +24,4 @@ router.post('/compare', ResearchController.compareSchemes);
 router.post('/overlap', ResearchController.getPortfolioOverlap);
 
 export default router;
+

@@ -2,11 +2,17 @@
 
 A proprietary, high-performance, multi-tenant B2B mutual fund transaction, advisory, and calculation engine developed for **Tanashvi Fintech Private Limited** (ARN-347849 / BSE Member Code 714114) to facilitate mutual fund distribution for Tanashvi and onboarded independent Mutual Fund Distributors (MFDs) with feature parity to platforms like **AdvisorKhoj**.
 
+* **Brand Identity:** **Tanashvi** (Legal entity: *Tanashvi Fintech Private Limited*)
+* **Corporate Motto / Tagline:** **भवतः हिताय** (*"Bhavatah Hitaya"* — *"For Your Welfare"*)
+* **Official Website:** [https://www.tanashvi.in/](https://www.tanashvi.in/)
+* **AMFI Registration:** `ARN-347849` | **BSE Member Code:** `714114`
+* **GitHub Repository:** [https://github.com/mrigtrade/mutual_fund_distibutor_platform_tanashvi.git](https://github.com/mrigtrade/mutual_fund_distibutor_platform_tanashvi.git)
+
 ---
 
 > ### 🛡️ Core Architectural Mandate
 > **Zero Live Dependency (Offline/Mock-First):**
-> Since BSE requires static IP whitelisting before any inbound connection to their gateway is permitted, the entire platform (security, state machines, DTO builders, financial calculators, portfolio valuation, and proposal carts) is designed to run self-contained locally against simulated BSE responses and offline seed fixtures.
+> Since BSE requires static IP whitelisting before any inbound connection to their gateway is permitted, the entire platform (security, state machines, DTO builders, financial calculators, portfolio valuation, research engines, and proposal carts) is designed to run self-contained locally against simulated BSE responses and offline seed fixtures.
 
 ---
 
@@ -32,6 +38,7 @@ flowchart TD
         PORT_API["/api/v1/portfolio/* (Holdings, XIRR, CAS)"]
         TAX_API["/api/v1/tax/* (Budget 2024 Capital Gains)"]
         PROP_API["/api/v1/proposals/* (MFD Magic Cart Links)"]
+        RES_API["/api/v1/research/* (Rolling Returns, Risk Ratios, Overlap)"]
     end
 
     subgraph Internal_Engine["Tanashvi Core Platform Engine"]
@@ -44,6 +51,7 @@ flowchart TD
         PORT["Portfolio Valuation & XIRR<br/>FIFO Lot Matching Engine"]
         TAX["Capital Gains Engine (Budget 2024)<br/>20% STCG | 12.5% LTCG | ₹1.25L Exemption"]
         CART["MFD Proposal & Cart Engine<br/>Magic Shareable Investment Links"]
+        RES["MF Research & Analytics Engine<br/>Rolling Returns | Risk Ratios | Fund Overlap"]
     end
 
     subgraph Security_Transport["BSE StAR MF v2 Transport & Security"]
@@ -64,6 +72,7 @@ flowchart TD
     API_Gateway --> PORT
     API_Gateway --> TAX
     API_Gateway --> CART
+    API_Gateway --> RES
     RLS --> VAL --> ORD --> UCC
     ORD --> HOT
     UCC --> HOT
@@ -109,7 +118,8 @@ mf-platform_dev/
 │   │   │   ├── scheme.ts                  # Scheme Master, ISIN, cut-off timings, NAV
 │   │   │   ├── order.ts                   # Lumpsum, SxP (SIP/STP/SWP), Mandates, State Machines
 │   │   │   ├── portfolio.ts               # Holdings, Folios, FIFO Lots, Capital Gains DTOs
-│   │   │   └── proposal.ts                # MFD Proposal Baskets & Magic Cart DTOs
+│   │   │   ├── proposal.ts                # MFD Proposal Baskets & Magic Cart DTOs
+│   │   │   └── research.ts                # Rolling Returns, Risk Ratios, Overlap & Comparison DTOs
 │   │   ├── calculators/                   # Mutual Fund & Goal Calculator Suite (AdvisorKhoj Feature Set)
 │   │   │   ├── calculatorTypes.ts         # Math inputs, outputs, and amortization schedules
 │   │   │   ├── sipCalculators.ts          # Regular SIP, Step-Up SIP, and Target Amount SIP
@@ -129,7 +139,11 @@ mf-platform_dev/
 │   │   │   ├── capitalGainsService.ts     # Union Budget 2024 capital gains tax & grandfathering
 │   │   │   ├── casParserService.ts        # CAMS/KFintech CAS statement parser (JSON & CSV)
 │   │   │   ├── portfolioService.ts        # Portfolio aggregator, valuation & asset allocation
-│   │   │   └── proposalService.ts         # MFD proposal cart creation & atomic execution
+│   │   │   ├── proposalService.ts         # MFD proposal cart creation & atomic execution
+│   │   │   ├── rollingReturnsService.ts   # 1Y, 3Y, 5Y, 7Y rolling CAGR & distribution engine
+│   │   │   ├── riskRatiosService.ts       # SD, Sharpe, Beta, Alpha, Sortino vs Nifty 50 TRI
+│   │   │   ├── portfolioOverlapService.ts # Portfolio stock overlap & duplication analyzer
+│   │   │   └── researchDataService.ts     # 7+ yrs historical NAVs & flagship scheme holdings
 │   │   ├── fixtures/
 │   │   │   ├── amfi_nav_sample.txt        # Pre-seeded top Indian mutual fund NAV feed
 │   │   │   └── ramesh_portfolio_sample.json # Sample investor portfolio (Ramesh Sharma)
@@ -143,6 +157,7 @@ mf-platform_dev/
 │   │   │   ├── portfolioController.ts     # Portfolio valuation & CAS import controller
 │   │   │   ├── taxController.ts           # Capital gains report controller (AdvisorKhoj feature)
 │   │   │   ├── proposalController.ts      # MFD proposal basket controller
+│   │   │   ├── researchController.ts      # Rolling returns, risk ratios & overlap controller
 │   │   │   └── bseWebhookController.ts    # Asynchronous BSE webhook event ingestion
 │   │   ├── routes/
 │   │   │   ├── uccRoutes.ts               # /api/v1/ucc
@@ -154,6 +169,7 @@ mf-platform_dev/
 │   │   │   ├── portfolioRoutes.ts         # /api/v1/portfolio
 │   │   │   ├── taxRoutes.ts               # /api/v1/tax
 │   │   │   ├── proposalRoutes.ts          # /api/v1/proposals
+│   │   │   ├── researchRoutes.ts          # /api/v1/research
 │   │   │   └── webhookRoutes.ts           # /api/v1/webhooks
 │   │   ├── database/
 │   │   │   ├── db.ts                      # PostgreSQL pool & withTenantTransaction (RLS injection)
@@ -162,7 +178,8 @@ mf-platform_dev/
 │   │   │       ├── 001_phase1_multitenant_routing.sql # Multi-tenant MFD routing, RLS, audit logs
 │   │   │       ├── 002_phase2_core_schemas.sql        # UCC, Schemes, Orders, Mandates
 │   │   │       ├── 003_phase8_portfolio_and_tax.sql   # Folios, Holdings, Transactions, FIFO Tax
-│   │   │       └── 004_phase9_proposal_baskets.sql    # MFD Proposals, Proposal Items, Magic Cart
+│   │   │       ├── 004_phase9_proposal_baskets.sql    # MFD Proposals, Proposal Items, Magic Cart
+│   │   │       └── 005_phase11_research_analytics.sql # Historical NAVs, Holdings & Research Metrics
 │   │   └── tests/
 │   │       ├── test_jose_security.ts              # Phase 1: Cryptographic verification testbench
 │   │       ├── test_phase3_mock_integration.ts     # Phase 3: Offline Mock Integration Testbench
@@ -171,9 +188,22 @@ mf-platform_dev/
 │   │       ├── test_calculators.ts                # Phase 6: Financial Calculators testbench
 │   │       ├── test_amfi_nav.ts                   # Phase 7: Daily AMFI NAV & Scheme Master testbench
 │   │       ├── test_phase8_portfolio_tax.ts       # Phase 8: Client Portfolio & Budget 2024 Tax
-│   │       └── test_phase9_proposal_cart.ts       # Phase 9: MFD Proposal Cart Execution testbench
+│   │       ├── test_phase9_proposal_cart.ts       # Phase 9: MFD Proposal Cart Execution testbench
+│   │       └── test_phase11_research.ts           # Phase 11: MF Research & Analytics testbench
 │   └── dist/                              # Compiled ECMAScript output
-├── bse-star-mf-integration-terminal/      # Client-side UI mock / prototype (AI Studio)
+├── bse-star-mf-integration-terminal/      # Client-side UI & Tanashvi MFD Terminal (React/Vite)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── TanashviLogo.tsx           # Lotus emblem, "Tanashvi", & "भवतः हिताय" lockup
+│   │   │   ├── Header.tsx                 # Navigation bar with Tanashvi branding
+│   │   │   ├── OrderTerminal.tsx          # BSE Order placement terminal
+│   │   │   ├── ProposalCartView.tsx       # MFD Proposal basket builder & investor cart preview
+│   │   │   ├── ResearchView.tsx           # Rolling returns, risk ratios, 4-way compare, overlap
+│   │   │   ├── CalculatorsView.tsx        # 10 AdvisorKhoj mutual fund financial calculators
+│   │   │   ├── PortfolioTaxView.tsx       # Portfolio valuation & Budget 2024 capital gains report
+│   │   │   └── UccManager.tsx             # Investor UCC management & nominee allocation
+├── logo/                                  # Official Tanashvi Lotus Brand Emblem
+└── park/                                  # Archived original zip releases
 └── park/                                  # Archived original zip releases
 ```
 
@@ -253,6 +283,11 @@ All communication with BSE StAR MF v2 endpoints strictly adheres to the **JOSE (
 | `GET` | `/api/v1/proposals/view` | Investor views proposal cart via share token (status &rarr; VIEWED). |
 | `POST` | `/api/v1/proposals/execute` | Investor one-click approval &rarr; atomic BSE order & SIP execution. |
 | `GET` | `/api/v1/proposals/list` | List all proposals curated by MFD. |
+| `GET` | `/api/v1/research/schemes` | List flagship schemes available for deep research and analytics. |
+| `GET` | `/api/v1/research/rolling-returns` | 1Y, 3Y, 5Y, 7Y rolling CAGR returns & probability distribution vs Nifty 50 TRI. |
+| `GET` | `/api/v1/research/risk-ratios` | Risk-adjusted volatility ratios (Standard Deviation, Beta, Alpha, Sharpe, Sortino). |
+| `POST` | `/api/v1/research/compare` | 4-way side-by-side scheme comparison matrix across trailing returns & risk. |
+| `POST` | `/api/v1/research/overlap` | Fund portfolio overlap percentage & shared equity holdings breakdown. |
 
 ---
 
@@ -266,7 +301,7 @@ All communication with BSE StAR MF v2 endpoints strictly adheres to the **JOSE (
 ```powershell
 cd bse-star-backend
 npm install
-npm test          # Builds TypeScript and executes all 8 test suites:
+npm test          # Builds TypeScript and executes all 9 test suites:
                   # 1. test:jose        -> Phase 1 JOSE Cryptographic Verification
                   # 2. test:mock        -> Phase 3 Offline API Request & Simulator Testbench
                   # 3. test:webhook     -> Phase 4 State Machine & Webhook Ingestion Testbench
@@ -275,11 +310,19 @@ npm test          # Builds TypeScript and executes all 8 test suites:
                   # 6. test:schemes     -> Phase 7 AMFI Open NAV & Scheme Master Sync
                   # 7. test:portfolio   -> Phase 8 Client Portfolio & Budget 2024 Tax Report
                   # 8. test:proposal    -> Phase 9 MFD Proposal Basket & Magic Cart Link
+                  # 9. test:research    -> Phase 11 Mutual Fund Research & Analytics Engine
 ```
 
 ### Start Development Server
 ```powershell
 npm run dev       # Runs HTTP API Server with tsx auto-reload on http://localhost:4000
+```
+
+### Run Frontend Integration Terminal
+```powershell
+cd ../bse-star-mf-integration-terminal
+npm install
+npm run dev       # Runs Vite dev server on http://localhost:5173
 ```
 
 ### Apply Database Migrations

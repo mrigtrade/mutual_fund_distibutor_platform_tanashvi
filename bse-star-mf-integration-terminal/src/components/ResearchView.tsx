@@ -848,3 +848,4 @@ export const ResearchView: React.FC = () => {
     </div>
   );
 };
+
