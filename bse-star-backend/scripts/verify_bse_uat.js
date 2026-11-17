@@ -12,6 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 
 // Configuration from BSE UAT Nov 13 Allocation or CLI Arguments
 const CONFIG = {
@@ -120,58 +121,50 @@ async function runDiagnostics() {
   }
 
   // --------------------------------------------------------------------------
-  // Step 3: Test Standard BSE v2 Login Endpoint (/api/login)
+  // Step 3: Targeted Authentication with Confirmed Username Format
   // --------------------------------------------------------------------------
-  printStep(3, 'Attempting Authentication with BSE StAR MF v2 (/api/login)...');
+  printStep(3, 'Attempting Authentication with Confirmed Format (94515/tanashvifintechpvtltd)...');
 
-  // Candidate username variants to auto-probe
-  const candidateUsernames = [
-    CONFIG.username,                 // tanashvifintechpvtltd
-    'tanashvi.in@gmail.com',         // User's registered Google/cloud email
-    CONFIG.memberId,                 // 94515
-    `${CONFIG.memberId}01`,          // 9451501 (default BSE terminal)
-    CONFIG.username.toUpperCase(),   // TANASHVIFINTECHPVTLTD
-    'tanashvi',                      // 8 chars
-    'TANASHVI',                      // 8 chars uppercase
-    'tanashvifintech',               // 15 chars truncated
-    `${CONFIG.memberId}_tanashvi`,   // Member_user
-    `${CONFIG.memberId}/tanashvifintechpvtltd`
+  const confirmedUsername = '94515/tanashvifintechpvtltd';
+  const plainPass = CONFIG.password; // '94515@Xyz'
+
+  const passwordVariants = [
+    { label: 'Exact Plain Password', val: plainPass },
+    { label: 'Lowercase Password', val: plainPass.toLowerCase() },
+    { label: 'Uppercase Password', val: plainPass.toUpperCase() },
+    { label: 'SHA-256 Hashed Password', val: crypto.createHash('sha256').update(plainPass).digest('hex') },
+    { label: 'MD5 Hashed Password', val: crypto.createHash('md5').update(plainPass).digest('hex') },
+    { label: 'SHA-256 Upper', val: crypto.createHash('sha256').update(plainPass).digest('hex').toUpperCase() },
+    { label: 'MD5 Upper', val: crypto.createHash('md5').update(plainPass).digest('hex').toUpperCase() }
   ];
-  // Deduplicate
-  const uniqueUsers = [...new Set(candidateUsernames)];
+
+  const headerVariants = [
+    { label: 'Standard Clean Headers', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' } },
+    { label: 'With Member Org-ID', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-API-Org-ID': CONFIG.memberId } },
+    { label: 'With Full Org-ID', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-API-Org-ID': `member/${CONFIG.memberId}` } }
+  ];
 
   let authToken = null;
-  let successfulUsername = null;
 
-  for (const userVariant of uniqueUsers) {
-    console.log(`\n  Testing Login with Username: ${colors.bright}"${userVariant}"${colors.reset} (Member: ${CONFIG.memberId})`);
-    
-    // We try two primary payload styles:
-    // Style A: { data: { username, password } }
-    // Style B: { data: { member_id, username, password } }
-    const payloadsToTry = [
-      {
-        desc: 'Standard { data: { username, password } }',
-        body: { data: { username: userVariant, password: CONFIG.password } }
-      },
-      {
-        desc: 'With Member ID { data: { member_id, username, password } }',
-        body: { data: { member_id: CONFIG.memberId, username: userVariant, password: CONFIG.password } }
-      }
-    ];
-
-    for (const p of payloadsToTry) {
+  for (const h of headerVariants) {
+    for (const p of passwordVariants) {
+      console.log(`\n  Testing: ${colors.bright}${h.label} + ${p.label}${colors.reset}`);
       try {
+        const loginPayload = {
+          data: {
+            username: confirmedUsername,
+            password: p.val
+          }
+        };
+
         const res = await fetch(`${CONFIG.demoBaseUrl}/api/login`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-API-Org-ID': `member/${CONFIG.memberId}:STATIC_TEST`,
+            ...h.headers,
             'User-Agent': 'Tanashvi-MFD-Platform/1.0'
           },
-          body: JSON.stringify(p.body),
-          signal: AbortSignal.timeout(15000)
+          body: JSON.stringify(loginPayload),
+          signal: AbortSignal.timeout(10000)
         });
 
         const rawText = await res.text();
@@ -180,34 +173,26 @@ async function runDiagnostics() {
 
         if (json && json.data && json.data.access_token) {
           authToken = json.data.access_token;
-          successfulUsername = userVariant;
-          printSuccess(`AUTHENTICATION SUCCESSFUL with username "${userVariant}"!`);
-          printSuccess(`Received Access Token: ${authToken.substring(0, 25)}... (Expires: ${json.data.expires_in || 86400}s)`);
+          printSuccess(`AUTHENTICATION SUCCESSFUL with ${h.label} + ${p.label}!`);
+          printSuccess(`Received Access Token: ${authToken.substring(0, 30)}...`);
           break;
         } else if (json && json.status && json.status.toString().toLowerCase() === 'success') {
-          printSuccess(`Login status reported SUCCESS with "${userVariant}"!`);
-          successfulUsername = userVariant;
+          printSuccess(`Login status reported SUCCESS!`);
           break;
         } else if (json && json.messages) {
           const errCode = json.messages[0]?.errcode;
-          const msg = json.messages[0]?.vals || json.messages[0]?.errcode;
-          if (errCode === 'invalid_username_format') {
-            // Format rejected, skip to next username
-            console.log(`    Format rejected for "${userVariant}".`);
-            break; // Break inner loop to try next username
-          } else {
-            printWarn(`BSE Response: [${errCode}] ${JSON.stringify(json.messages)}`);
-            // If the error is anything OTHER than invalid_username_format, the format was ACCEPTED!
-            printSuccess(`Format "${userVariant}" is an ACCEPTED username format! (Error: ${errCode})`);
+          console.log(`    Result: [${errCode}] (HTTP ${res.status})`);
+          if (errCode === 'force_password_change' || errCode === 'first_login_pending') {
+            printWarn(`Account requires First-Time Password Reset via Web Portal: https://starmfv2demo.bseindia.com/`);
+            break;
           }
         } else {
-          console.log(`    Status: ${res.status} | Raw: ${rawText.substring(0, 80)}`);
+          console.log(`    Status: ${res.status} | Output: ${rawText.substring(0, 100)}`);
         }
       } catch (reqErr) {
-        printError(`Request for "${userVariant}" failed: ${reqErr.message}`);
+        printError(`Request failed: ${reqErr.message}`);
       }
     }
-
     if (authToken) break;
   }
 
