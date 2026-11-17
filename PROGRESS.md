@@ -319,16 +319,36 @@
 
 ---
 
+### Phase 14: Oracle Cloud Infrastructure & Live BSE UAT Gateway Activation
+* **Backend Server Infrastructure Provisioned:**
+  * **Provider:** Oracle Cloud Infrastructure (Always Free Tier) · Ubuntu 22.04 LTS.
+  * **Reserved Static Public IP:** `130.210.57.235` (Submitted to BSE for static IP whitelisting).
+  * **Anti-Idle Keepalive:** Configured twice-daily cron running `/usr/bin/stress --cpu 1 --timeout 300` (at 02:00 and 14:00 UTC) preventing instance reclamation.
+  * **Runtime:** Node.js v20.20.2 & NPM active in `~/bse-backend`.
+  * **Security Keys:** 2048-bit RSA keypair generated; `bse_api_public.pem` shared with BSE, private key stored at `~/bse-backend/bse_api_private.pem` (restricted to `chmod 400`).
+* **Official BSE StAR MF v2 UAT Credentials (Allocated Nov 13):**
+  * **Member ID:** `94515`
+  * **User ID:** `tanashvifintechpvtltd`
+  * **Password:** `94515@Xyz`
+  * **UAT Demo Gateway URL:** `https://starmfv2demo.bseindia.com/api`
+* **Automated UAT Verification & Testing Suite:**
+  * Created [`verify_bse_uat.js`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/scripts/verify_bse_uat.js) and [`setup_and_test_on_server.sh`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/scripts/setup_and_test_on_server.sh) for single-command execution on the server.
+  * Validates gateway reachability, IP whitelisting status, token retrieval via `/api/login`, and sample master data verification.
+
+---
+
 ## 📌 Quick Context & Key Credentials Reference
 
 * **Entity:** Tanashvi Fintech Private Limited
 * **Brand:** Tanashvi | **Motto:** भवतः हिताय
 * **Website:** https://www.tanashvi.in
-* **BSE Member Code:** `714114`
+* **BSE Member Code:** `94515` (Official UAT Member ID)
+* **BSE User ID:** `tanashvifintechpvtltd`
 * **AMFI ARN:** `ARN-347849`
+* **Oracle Cloud Static IP:** `130.210.57.235`
+* **Target UAT Gateway:** `https://starmfv2demo.bseindia.com/api`
+* **Target Live Gateway (Future):** `https://v2.bsestarmf.in/api`
 * **Live Web Application (Vercel):** `https://mutual-fund-distibutor-platform-tan.vercel.app/`
 * **GitHub Repository:** `https://github.com/mrigtrade/mutual_fund_distibutor_platform_tanashvi.git`
-* **Target Live Gateway (Future):** `https://v2.bsestarmf.in/api`
-* **Target QA Gateway:** `https://qa.starmfv2.remiges.tech/api`
 * **AMFI NAV Open URL:** `https://www.amfiindia.com/spages/NAVAll.txt`
 * **Local Test Suite:** `npm test` runs all 9 test suites (`test:jose`, `test:mock`, `test:webhook`, `test:api`, `test:calculators`, `test:schemes`, `test:portfolio`, `test:proposal`, `test:research`) with 100% green pass.

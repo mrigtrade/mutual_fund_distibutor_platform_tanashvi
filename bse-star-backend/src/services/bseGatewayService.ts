@@ -44,12 +44,12 @@ export class BseGatewayService {
 
   constructor(config?: Partial<BseServiceConfig>) {
     const mode = (config?.gatewayMode || process.env.BSE_GATEWAY_MODE || 'MOCK').toUpperCase() as 'MOCK' | 'LIVE';
-    const memberCode = config?.memberCode || process.env.BSE_MEMBER_CODE || '714114';
+    const memberCode = config?.memberCode || process.env.BSE_MEMBER_CODE || '94515';
     const fingerprint = config?.fingerprint || process.env.BSE_MEMBER_FINGERPRINT || 'BSE_FINGERPRINT_3A89C0';
 
     this.config = {
       gatewayMode: mode,
-      liveBaseUrl: config?.liveBaseUrl || process.env.BSE_GATEWAY_URL || 'https://v2.bsestarmf.in/api',
+      liveBaseUrl: config?.liveBaseUrl || process.env.BSE_GATEWAY_URL || 'https://starmfv2demo.bseindia.com/api',
       memberCode,
       fingerprint,
       memberPublicKeyPem: config?.memberPublicKeyPem || process.env.BSE_MEMBER_PUBLIC_KEY,
@@ -133,8 +133,8 @@ export class BseGatewayService {
       return { accessToken: this.cachedToken, expiresIn: this.tokenExpiry - now };
     }
 
-    const loginUser = username || `member/${this.config.memberCode}/tanashvi.admin`;
-    const loginPass = password || 'Tanashvi@2026#Prod';
+    const loginUser = username || process.env.BSE_USERNAME || 'tanashvifintechpvtltd';
+    const loginPass = password || process.env.BSE_PASSWORD || '94515@Xyz';
 
     const loginPayload = {
       data: {

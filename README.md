@@ -5,7 +5,8 @@ A proprietary, high-performance, multi-tenant B2B mutual fund transaction, advis
 * **Brand Identity:** **Tanashvi** (Legal entity: *Tanashvi Fintech Private Limited*)
 * **Corporate Motto / Tagline:** **भवतः हिताय** (*"Bhavatah Hitaya"* — *"For Your Welfare"*)
 * **Official Website:** [https://www.tanashvi.in/](https://www.tanashvi.in/)
-* **AMFI Registration:** `ARN-347849` | **BSE Member Code:** `714114`
+* **AMFI Registration:** `ARN-347849` | **BSE Member Code:** `94515` (Official UAT Allocated)
+* **Oracle Cloud Dedicated Server:** `130.210.57.235` (Ubuntu 22.04 LTS · Static Whitelisted IP)
 * **Live Web Application (Vercel):** [https://mutual-fund-distibutor-platform-tan.vercel.app/](https://mutual-fund-distibutor-platform-tan.vercel.app/)
 * **GitHub Repository:** [https://github.com/mrigtrade/mutual_fund_distibutor_platform_tanashvi.git](https://github.com/mrigtrade/mutual_fund_distibutor_platform_tanashvi.git)
 
@@ -319,6 +320,20 @@ All communication with BSE StAR MF v2 endpoints strictly adheres to the **JOSE (
   * 1-Click peer group presets: *Flagship Mix*, *Large Cap Bluechips*, *Mid & Small Cap Alpha*, and *Flexi & Multi Cap*.
   * Expanded analytical parameters: Overview, Trailing Returns (1M, 3M, 6M, 1Y, 3Y, 5Y, Inception), 3Y Risk Ratios (Beta, Sharpe, Jensen's Alpha, Sortino, SD, $R^2$), and Top 3 Look-Through Holdings.
   * Branded client-side PDF and Excel (.xls) dynamic report downloads.
+
+### Phase 14: Oracle Cloud Backend Server Infrastructure & Live BSE UAT Gateway Activation
+* **Dedicated Cloud Infrastructure Provisioned:**
+  * **Provider:** Oracle Cloud (Always Free Tier) · Ubuntu 22.04 LTS · Static Public IP `130.210.57.235`.
+  * **Anti-Idle Keepalive:** Configured twice-daily cron running `/usr/bin/stress --cpu 1 --timeout 300` to prevent instance reclamation.
+  * **Node.js Environment:** Node.js v20.20.2 & NPM active in `~/bse-backend`.
+  * **Cryptographic Infrastructure:** 2048-bit RSA key pair (`bse_api_public.pem` shared with BSE, `bse_api_private.pem` on server with `chmod 400`).
+* **Official BSE StAR MF v2 UAT Credentials (Allocated Nov 13):**
+  * **Member ID:** `94515`
+  * **User ID:** `tanashvifintechpvtltd`
+  * **Password:** `94515@Xyz`
+  * **UAT Demo Gateway URL:** `https://starmfv2demo.bseindia.com/api`
+* **Automated Diagnostic & Verification Suite:**
+  * Created `bse-star-backend/scripts/verify_bse_uat.js` and `setup_and_test_on_server.sh` for single-command UAT verification on the Ubuntu server.
 
 ---
 

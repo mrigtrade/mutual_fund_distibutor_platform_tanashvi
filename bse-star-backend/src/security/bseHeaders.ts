@@ -7,7 +7,7 @@
  * - Authorization: Bearer <token>
  * - X-STARMFv2-Trace-ID: <uuid>
  * 
- * Configured with Tanashvi Fintech Private Limited Member Code (714114)
+ * Configured with Tanashvi Fintech Private Limited Member Code (94515)
  */
 
 import { v4 as uuidv4 } from 'uuid';
@@ -29,7 +29,7 @@ export interface BseRequestHeaders {
 }
 
 export class BseHeaderService {
-  public static readonly DEFAULT_MEMBER_CODE = process.env.BSE_MEMBER_CODE || '714114';
+  public static readonly DEFAULT_MEMBER_CODE = process.env.BSE_MEMBER_CODE || '94515';
   public static readonly DEFAULT_FINGERPRINT = process.env.BSE_MEMBER_FINGERPRINT || 'BSE_FINGERPRINT_PLACEHOLDER_CHECKSUM';
 
   /**
