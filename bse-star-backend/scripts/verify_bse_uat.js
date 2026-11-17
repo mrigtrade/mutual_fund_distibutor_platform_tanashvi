@@ -124,15 +124,18 @@ async function runDiagnostics() {
   // --------------------------------------------------------------------------
   printStep(3, 'Attempting Authentication with BSE StAR MF v2 (/api/login)...');
 
-  // Candidate username variants to auto-probe if format error occurs
+  // Candidate username variants to auto-probe
   const candidateUsernames = [
-    CONFIG.username,
-    CONFIG.memberId,
-    `${CONFIG.memberId}01`,
-    CONFIG.username.toUpperCase(),
-    'tanashvi',
-    'TANASHVI',
-    'tanashvifintech'
+    CONFIG.username,                 // tanashvifintechpvtltd
+    'tanashvi.in@gmail.com',         // User's registered Google/cloud email
+    CONFIG.memberId,                 // 94515
+    `${CONFIG.memberId}01`,          // 9451501 (default BSE terminal)
+    CONFIG.username.toUpperCase(),   // TANASHVIFINTECHPVTLTD
+    'tanashvi',                      // 8 chars
+    'TANASHVI',                      // 8 chars uppercase
+    'tanashvifintech',               // 15 chars truncated
+    `${CONFIG.memberId}_tanashvi`,   // Member_user
+    `${CONFIG.memberId}/tanashvifintechpvtltd`
   ];
   // Deduplicate
   const uniqueUsers = [...new Set(candidateUsernames)];
@@ -142,58 +145,70 @@ async function runDiagnostics() {
 
   for (const userVariant of uniqueUsers) {
     console.log(`\n  Testing Login with Username: ${colors.bright}"${userVariant}"${colors.reset} (Member: ${CONFIG.memberId})`);
-    try {
-      const loginPayload = {
-        data: {
-          username: userVariant,
-          password: CONFIG.password
-        }
-      };
+    
+    // We try two primary payload styles:
+    // Style A: { data: { username, password } }
+    // Style B: { data: { member_id, username, password } }
+    const payloadsToTry = [
+      {
+        desc: 'Standard { data: { username, password } }',
+        body: { data: { username: userVariant, password: CONFIG.password } }
+      },
+      {
+        desc: 'With Member ID { data: { member_id, username, password } }',
+        body: { data: { member_id: CONFIG.memberId, username: userVariant, password: CONFIG.password } }
+      }
+    ];
 
-      const res = await fetch(`${CONFIG.demoBaseUrl}/api/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-API-Org-ID': `member/${CONFIG.memberId}:STATIC_TEST`,
-          'User-Agent': 'Tanashvi-MFD-Platform/1.0'
-        },
-        body: JSON.stringify(loginPayload),
-        signal: AbortSignal.timeout(15000)
-      });
-
-      console.log(`  HTTP Response Status: ${res.status} ${res.statusText}`);
-      const rawText = await res.text();
-
+    for (const p of payloadsToTry) {
       try {
-        const json = JSON.parse(rawText);
-        console.log(`  Response Payload:`, JSON.stringify(json, null, 2));
+        const res = await fetch(`${CONFIG.demoBaseUrl}/api/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-API-Org-ID': `member/${CONFIG.memberId}:STATIC_TEST`,
+            'User-Agent': 'Tanashvi-MFD-Platform/1.0'
+          },
+          body: JSON.stringify(p.body),
+          signal: AbortSignal.timeout(15000)
+        });
 
-        if (json.data && json.data.access_token) {
+        const rawText = await res.text();
+        let json;
+        try { json = JSON.parse(rawText); } catch (_) {}
+
+        if (json && json.data && json.data.access_token) {
           authToken = json.data.access_token;
           successfulUsername = userVariant;
           printSuccess(`AUTHENTICATION SUCCESSFUL with username "${userVariant}"!`);
           printSuccess(`Received Access Token: ${authToken.substring(0, 25)}... (Expires: ${json.data.expires_in || 86400}s)`);
           break;
-        } else if (json.status && json.status.toString().toLowerCase() === 'success') {
-          printSuccess(`Login status reported SUCCESS!`);
+        } else if (json && json.status && json.status.toString().toLowerCase() === 'success') {
+          printSuccess(`Login status reported SUCCESS with "${userVariant}"!`);
           successfulUsername = userVariant;
           break;
-        } else if (json.messages && json.messages[0]?.errcode === 'invalid_username_format') {
-          printWarn(`Format rejected for "${userVariant}". Trying next candidate...`);
-        } else if (json.message || json.messages) {
-          printWarn(`BSE Response Message: ${JSON.stringify(json.message || json.messages)}`);
-          // If error is invalid password or user not found, format was valid!
-          if (json.messages && json.messages[0]?.errcode !== 'invalid_username_format') {
-            printSuccess(`Format "${userVariant}" is a VALID format accepted by BSE!`);
+        } else if (json && json.messages) {
+          const errCode = json.messages[0]?.errcode;
+          const msg = json.messages[0]?.vals || json.messages[0]?.errcode;
+          if (errCode === 'invalid_username_format') {
+            // Format rejected, skip to next username
+            console.log(`    Format rejected for "${userVariant}".`);
+            break; // Break inner loop to try next username
+          } else {
+            printWarn(`BSE Response: [${errCode}] ${JSON.stringify(json.messages)}`);
+            // If the error is anything OTHER than invalid_username_format, the format was ACCEPTED!
+            printSuccess(`Format "${userVariant}" is an ACCEPTED username format! (Error: ${errCode})`);
           }
+        } else {
+          console.log(`    Status: ${res.status} | Raw: ${rawText.substring(0, 80)}`);
         }
-      } catch (parseErr) {
-        console.log(`  Raw Response: ${rawText.substring(0, 150)}...`);
+      } catch (reqErr) {
+        printError(`Request for "${userVariant}" failed: ${reqErr.message}`);
       }
-    } catch (reqErr) {
-      printError(`Request for "${userVariant}" failed: ${reqErr.message}`);
     }
+
+    if (authToken) break;
   }
 
   // --------------------------------------------------------------------------
