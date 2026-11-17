@@ -320,20 +320,23 @@
 ---
 
 ### Phase 14: Oracle Cloud Infrastructure & Live BSE UAT Gateway Activation
-* **Backend Server Infrastructure Provisioned:**
+* **Backend Server Infrastructure Provisioned & Daemonized:**
   * **Provider:** Oracle Cloud Infrastructure (Always Free Tier) · Ubuntu 22.04 LTS.
-  * **Reserved Static Public IP:** `130.210.57.235` (Submitted to BSE for static IP whitelisting).
-  * **Anti-Idle Keepalive:** Configured twice-daily cron running `/usr/bin/stress --cpu 1 --timeout 300` (at 02:00 and 14:00 UTC) preventing instance reclamation.
-  * **Runtime:** Node.js v20.20.2 & NPM active in `~/bse-backend`.
-  * **Security Keys:** 2048-bit RSA keypair generated; `bse_api_public.pem` shared with BSE, private key stored at `~/bse-backend/bse_api_private.pem` (restricted to `chmod 400`).
-* **Official BSE StAR MF v2 UAT Credentials (Allocated Nov 13):**
-  * **Member ID:** `94515`
-  * **User ID:** `tanashvifintechpvtltd`
-  * **Password:** `94515@Xyz`
-  * **UAT Demo Gateway URL:** `https://starmfv2demo.bseindia.com/api`
-* **Automated UAT Verification & Testing Suite:**
-  * Created [`verify_bse_uat.js`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/scripts/verify_bse_uat.js) and [`setup_and_test_on_server.sh`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/scripts/setup_and_test_on_server.sh) for single-command execution on the server.
-  * Validates gateway reachability, IP whitelisting status, token retrieval via `/api/login`, and sample master data verification.
+  * **Reserved Static Public IP:** `130.210.57.235` (Whitelisted by BSE).
+  * **OCI Security List & Host Firewall:** Configured Ingress Rules for destination ports `3000-4000` (TCP, `0.0.0.0/0`), and inserted Rule #1 in Ubuntu `iptables` (`sudo iptables -I INPUT 1 -p tcp --dport 3000 -j ACCEPT; netfilter-persistent save`).
+  * **Daemon Process:** Express server managed under PM2 (`pm2 start index.js --name bse-api; pm2 save`), listening on `*:3000`.
+  * **External Verification:** `Test-NetConnection -ComputerName 130.210.57.235 -Port 3000` verified `TcpTestSucceeded : True`; external HTTP GET returns `"BSE UAT Backend is running and waiting for API integration!"`.
+* **BSE StAR MF v2 Network Whitelisting Confirmed:**
+  * Verified outbound connectivity from `130.210.57.235` to `starmfv2demo.bseindia.com` in 356ms (HTTP 200). Perimeter firewall successfully passes packets without dropping.
+* **Username Format Architecture Discovered:**
+  * Identified that BSE StAR MF v2 REST API requires a composite `<MEMBER_ID>/<USER_ID>` username format: `94515/tanashvifintechpvtltd`.
+  * Standard usernames triggered `msgid: 582` (`invalid_username_format`), whereas `94515/tanashvifintechpvtltd` cleanly passed validation, confirming format acceptance by BSE.
+* **Web Portal vs API Architecture Identified:**
+  * Clarified that `starmfv2demo.bseindia.com` is a headless machine-to-machine REST API gateway (hence timing out in browsers on `/`).
+  * Identified human browser portal at `https://bsestarmfdemo.bseindia.com/Index.aspx` with a 20-character limit on the User ID field (`tanashvifintechpvtlt`).
+* **Active Status:**
+  * Email dispatched to Harsheel Sanghvi (BSE) on Nov 17 requesting confirmation of active User ID and password synchronization on the demo cluster.
+  * Automated diagnostic testbench [`verify_bse_uat.js`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/scripts/verify_bse_uat.js) ready on server for instant verification once credentials are authenticated.
 
 ---
 
