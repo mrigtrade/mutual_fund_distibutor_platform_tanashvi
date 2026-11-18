@@ -17,7 +17,8 @@
     "test:portfolio": "node dist/tests/test_phase8_portfolio_tax.js",
     "test:proposal": "node dist/tests/test_phase9_proposal_cart.js",
     "test:research": "node dist/tests/test_phase11_research.js",
-    "test": "npm run build && npm run test:jose && npm run test:mock && npm run test:webhook && npm run test:api && npm run test:calculators && npm run test:schemes && npm run test:portfolio && npm run test:proposal && npm run test:research"
+    "test:benchmarks": "node dist/tests/test_phase15_benchmarks.js",
+    "test": "npm run build && npm run test:jose && npm run test:mock && npm run test:webhook && npm run test:api && npm run test:calculators && npm run test:schemes && npm run test:portfolio && npm run test:proposal && npm run test:research && npm run test:benchmarks"
   },
   "keywords": [],
   "author": "",

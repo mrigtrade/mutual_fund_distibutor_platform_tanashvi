@@ -23,12 +23,14 @@ import {
   DollarSign, 
   CreditCard,
   Layers,
-  Info
+  Info,
+  Activity
 } from 'lucide-react';
 import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
+import { PortfolioChartsAndBenchmark } from './PortfolioChartsAndBenchmark';
 
 export const InvestorPortalView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'holdings' | 'stocks' | 'sips' | 'proposals' | 'tax'>('holdings');
+  const [activeTab, setActiveTab] = useState<'holdings' | 'charts' | 'stocks' | 'sips' | 'proposals' | 'tax'>('holdings');
   const [cartExecuted, setCartExecuted] = useState(false);
 
   const investor = {
@@ -355,7 +357,7 @@ export const InvestorPortalView: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('holdings')}
           className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
@@ -366,6 +368,18 @@ export const InvestorPortalView: React.FC = () => {
         >
           <PieChart className="w-3.5 h-3.5" />
           <span>My Holdings & Allocation</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('charts')}
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
+            activeTab === 'charts'
+              ? 'bg-[#c5a059] text-slate-950 shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Activity className="w-3.5 h-3.5" />
+          <span>Charts & Benchmark</span>
         </button>
 
         <button
@@ -419,6 +433,41 @@ export const InvestorPortalView: React.FC = () => {
           <span>Tax Statement (ITR)</span>
         </button>
       </div>
+
+      {/* Tab: Interactive Charts & Benchmark Comparison */}
+      {activeTab === 'charts' && (
+        <PortfolioChartsAndBenchmark
+          title="My Portfolio Charts & Market Benchmark Comparison"
+          subtitle={`Compare your wealth growth against Nifty 50 TRI, Nifty 500 TRI, Midcap/Smallcap TRI & Asset-Matched Blended Benchmarks`}
+          entityName={investor.name}
+          pan={investor.pan}
+          ucc={investor.ucc}
+          totalInvested={investor.totalInvested}
+          currentValue={investor.currentValue}
+          portfolioXirr={investor.portfolioXirr}
+          assetAllocation={{
+            equityPct: investor.allocation.equityPct,
+            debtPct: investor.allocation.debtPct,
+            liquidPct: investor.allocation.liquidPct
+          }}
+          marketCapAllocation={{
+            largeCapPct: 74.5,
+            midCapPct: 10.2,
+            smallCapPct: 6.3,
+            debtCashPct: 9.0
+          }}
+          holdings={investor.holdings.map(h => ({
+            name: h.name,
+            invested: h.invested,
+            currentValue: h.curVal,
+            xirr: h.xirr,
+            category: h.category
+          }))}
+          sectorBreakdown={investor.sectorBreakdown}
+          userRole="INVESTOR"
+          defaultBenchmark="NIFTY_50_TRI"
+        />
+      )}
 
       {/* Tab 1: Holdings */}
       {activeTab === 'holdings' && (

@@ -340,6 +340,28 @@
 
 ---
 
+### Phase 15: Portfolio Visualization & Multi-Benchmark TRI Engine (All User Levels)
+* **Backend Multi-Benchmark TRI Engine & Update Mechanisms (`bse-star-backend`):**
+  * Created [`benchmark.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/types/benchmark.ts), [`benchmarkService.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/services/benchmarkService.ts), [`benchmarkController.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/controllers/benchmarkController.ts), [`benchmarkRoutes.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/routes/benchmarkRoutes.ts), and PostgreSQL migration [`006_phase15_benchmark_tri.sql`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/database/migrations/006_phase15_benchmark_tri.sql).
+  * Supports **6 Standard Indian TRI Benchmarks** (`Nifty 50 TRI`, `Nifty 500 TRI`, `Nifty Midcap 150 TRI`, `Nifty Smallcap 250 TRI`, `BSE Sensex TRI`, `CRISIL Short Term Debt Index`) + dynamic **SEBI-style Custom Blended Benchmark** auto-weighted to the portfolio's exact Equity:Debt mix.
+  * **3 Built-in TRI Update Channels:**
+    1. **Automated Live EOD Sync (`POST /api/v1/benchmarks/sync`):** Pulls live daily EOD NAVs via AMFI Direct Index Fund TRI proxies (`api.mfapi.in`) with disk cache persistence and offline seed fallback.
+    2. **Official NSE/BSE TRI CSV Bulk Import (`POST /api/v1/benchmarks/import`):** Parses `niftyindices.com` / `asiaindices.co.in` CSV exports (`DD MMM YYYY`, `DD-MMM-YYYY`, `YYYY-MM-DD`).
+    3. **Manual EOD Override (`POST /api/v1/benchmarks/manual`)** + standalone weekday server cron script [`sync_benchmarks_eod.js`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/scripts/sync_benchmarks_eod.js).
+  * Verified via [`test_phase15_benchmarks.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-backend/src/tests/test_phase15_benchmarks.ts) — all 10 backend suites pass 100%.
+* **Frontend Interactive Charts & Benchmarking Suite (`bse-star-mf-integration-terminal`):**
+  * Built reusable [`PortfolioChartsAndBenchmark.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/PortfolioChartsAndBenchmark.tsx) & [`benchmarkData.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/utils/benchmarkData.ts) featuring:
+    * Interactive dual-series SVG Portfolio vs. Benchmark curve (`₹ Wealth Growth` & `Base 100` toggle) with live mouse-hover crosshair tooltips across `6M`, `1Y`, `3Y`, `5Y`, `ALL`.
+    * Alpha Scorecard: Portfolio vs. Benchmark XIRR, Net Alpha, Extra Wealth Generated (`₹`), Max Drawdown, Beta, and Up/Down Capture Ratios.
+    * Interactive SVG Donut Charts (Asset Allocation + Market-Cap Distribution), Scheme-wise Invested vs. Current Value Bars, and Sector Exposure Bars.
+    * Built-in **Benchmark TRI Data Freshness & Update Center** (one-click Live AMFI TRI Sync, NSE/BSE CSV file upload, and Manual EOD TRI entry with `localStorage` persistence) + branded PDF & Excel (.xls) exports.
+  * Deployed across **ALL 4 User Levels**:
+    * **Category 3 (End Investor):** `Charts & Benchmark` tab inside `InvestorPortalView.tsx`.
+    * **Category 1 & 2 (Standalone & Network MFD):** Client-level `Charts & Benchmark` tab inside `PortfolioTaxView.tsx` + Aggregate Book `Book Charts & Benchmark TRI` tab inside `AumSystematicAnalyticsView.tsx`.
+    * **Category 4 (Tanashvi Promoters / HQ):** Platform-wide `Platform AUM Charts & TRI Manager` tab inside `PromoterDashboardView.tsx` + `AumSystematicAnalyticsView.tsx`.
+
+---
+
 ## 📌 Quick Context & Key Credentials Reference
 
 * **Entity:** Tanashvi Fintech Private Limited
@@ -354,4 +376,4 @@
 * **Live Web Application (Vercel):** `https://mutual-fund-distibutor-platform-tan.vercel.app/`
 * **GitHub Repository:** `https://github.com/mrigtrade/mutual_fund_distibutor_platform_tanashvi.git`
 * **AMFI NAV Open URL:** `https://www.amfiindia.com/spages/NAVAll.txt`
-* **Local Test Suite:** `npm test` runs all 9 test suites (`test:jose`, `test:mock`, `test:webhook`, `test:api`, `test:calculators`, `test:schemes`, `test:portfolio`, `test:proposal`, `test:research`) with 100% green pass.
+* **Local Test Suite:** `npm test` runs all 10 test suites (`test:jose`, `test:mock`, `test:webhook`, `test:api`, `test:calculators`, `test:schemes`, `test:portfolio`, `test:proposal`, `test:research`, `test:benchmarks`) with 100% green pass.

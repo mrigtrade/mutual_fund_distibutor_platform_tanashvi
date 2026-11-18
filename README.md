@@ -335,13 +335,23 @@ All communication with BSE StAR MF v2 endpoints strictly adheres to the **JOSE (
 * **Automated Diagnostic & Verification Suite:**
   * Created `bse-star-backend/scripts/verify_bse_uat.js` and `setup_and_test_on_server.sh` for single-command UAT verification on the Ubuntu server.
 
+### Phase 15: Portfolio Visualization & Multi-Benchmark TRI Engine (All User Levels)
+* **Interactive Visual Charts & Multi-Benchmark Comparison:**
+  * Supports **Nifty 50 TRI**, **Nifty 500 TRI**, **Nifty Midcap 150 TRI**, **Nifty Smallcap 250 TRI**, **BSE Sensex TRI**, **CRISIL Short Term Debt Index**, and an auto-weighted **SEBI-Style Custom Blended Benchmark**.
+  * Dual-series SVG Portfolio vs. Benchmark curve (`₹ Wealth Growth` & `Base 100`), hover crosshair tooltips, Alpha Scorecard (`Portfolio XIRR vs. Benchmark XIRR`, `Net Alpha`, `Extra Wealth in ₹`, `Max Drawdown`, `Beta`, `Up/Down Capture`), interactive Asset & Market-Cap Donuts, Scheme Invested vs. Current Value Bars, and Branded PDF/XLS export.
+  * Deployed across **all 4 user levels**: End Investor (`InvestorPortalView`), Standalone & Network MFDs (`PortfolioTaxView` + `AumSystematicAnalyticsView`), and Tanashvi Promoters/HQ (`PromoterDashboardView`).
+* **Keeping Benchmark TRI Data Updated:**
+  * **One-Click Live Sync:** `POST /api/v1/benchmarks/sync` (and UI `Sync Live TRI` button) fetches live daily EOD TRI proxies from open AMFI Direct Index feeds (`api.mfapi.in`).
+  * **Official NSE/BSE TRI CSV Import:** `POST /api/v1/benchmarks/import` (and UI CSV uploader) parses official `niftyindices.com` / `asiaindices.co.in` TRI CSV exports.
+  * **Manual EOD Override & Weekday Server Cron:** `POST /api/v1/benchmarks/manual` + `bse-star-backend/scripts/sync_benchmarks_eod.js` for automated Mon–Fri 22:00 IST cron sync on Oracle Cloud.
+
 ---
 
 ### Build & Run Offline Testbenches
 ```powershell
 cd bse-star-backend
 npm install
-npm test          # Builds TypeScript and executes all 9 test suites:
+npm test          # Builds TypeScript and executes all 10 test suites:
                   # 1. test:jose        -> Phase 1 JOSE Cryptographic Verification
                   # 2. test:mock        -> Phase 3 Offline API Request & Simulator Testbench
                   # 3. test:webhook     -> Phase 4 State Machine & Webhook Ingestion Testbench
@@ -351,6 +361,7 @@ npm test          # Builds TypeScript and executes all 9 test suites:
                   # 7. test:portfolio   -> Phase 8 Client Portfolio & Budget 2024 Tax Report
                   # 8. test:proposal    -> Phase 9 MFD Proposal Basket & Magic Cart Link
                   # 9. test:research    -> Phase 11 Mutual Fund Research & Analytics Engine
+                  # 10. test:benchmarks -> Phase 15 Portfolio Benchmarking & TRI Sync Engine
 ```
 
 ### Start Development Server

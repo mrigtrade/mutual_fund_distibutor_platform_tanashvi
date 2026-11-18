@@ -22,6 +22,7 @@ import portfolioRoutes from './routes/portfolioRoutes.js';
 import taxRoutes from './routes/taxRoutes.js';
 import proposalRoutes from './routes/proposalRoutes.js';
 import researchRoutes from './routes/researchRoutes.js';
+import benchmarkRoutes from './routes/benchmarkRoutes.js';
 import { globalErrorHandler } from './middleware/errorHandler.js';
 import { BseGatewayService } from './services/bseGatewayService.js';
 
@@ -59,6 +60,7 @@ export function createApp(): Express {
   app.use('/api/v1/tax', taxRoutes);
   app.use('/api/v1/proposals', proposalRoutes);
   app.use('/api/v1/research', researchRoutes);
+  app.use('/api/v1/benchmarks', benchmarkRoutes);
 
   // 404 Not Found Handler
   app.use((req: Request, res: Response) => {

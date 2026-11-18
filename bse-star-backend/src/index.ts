@@ -34,4 +34,7 @@ export * from './calculators/withdrawalCalculators.js';
 export * from './controllers/calculatorController.js';
 export * from './services/amfiNavService.js';
 export * from './controllers/schemeController.js';
+export * from './types/benchmark.js';
+export * from './services/benchmarkService.js';
+export * from './controllers/benchmarkController.js';
 export * from './app.js';

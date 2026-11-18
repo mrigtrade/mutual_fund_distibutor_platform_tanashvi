@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { PieChart, TrendingUp, ShieldCheck, FileText, CheckCircle2, AlertCircle, Download, ArrowUpRight, DollarSign, FileSpreadsheet, Layers, Info } from 'lucide-react';
+import { PieChart, TrendingUp, ShieldCheck, FileText, CheckCircle2, AlertCircle, Download, ArrowUpRight, DollarSign, FileSpreadsheet, Layers, Info, Activity } from 'lucide-react';
 import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
+import { PortfolioChartsAndBenchmark } from './PortfolioChartsAndBenchmark';
 
 export const PortfolioTaxView: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState<'ramesh' | 'sunita' | 'vikram'>('ramesh');
   const [selectedFy, setSelectedFy] = useState<'2024-2025' | '2025-2026'>('2024-2025');
-  const [activeTab, setActiveTab] = useState<'portfolio' | 'tax' | 'stocks' | 'cas'>('tax');
+  const [activeTab, setActiveTab] = useState<'portfolio' | 'charts' | 'tax' | 'stocks' | 'cas'>('tax');
 
   const CLIENTS_DATA: Record<string, any> = {
     ramesh: {
@@ -579,6 +580,17 @@ export const PortfolioTaxView: React.FC = () => {
               Holdings & XIRR
             </button>
             <button
+              onClick={() => setActiveTab('charts')}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+                activeTab === 'charts'
+                  ? 'bg-[#c5a059] text-slate-950 font-bold'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              Charts & Benchmark
+            </button>
+            <button
               onClick={() => setActiveTab('stocks')}
               className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                 activeTab === 'stocks'
@@ -632,6 +644,54 @@ export const PortfolioTaxView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Interactive Portfolio Charts & Benchmark Comparison View */}
+      {activeTab === 'charts' && (
+        <PortfolioChartsAndBenchmark
+          key={selectedClient}
+          title={`${activeClientData.investorName} — Portfolio Charts & Benchmark Review`}
+          subtitle={`${activeClientData.profileBadge} · Compare client portfolio against Nifty 50 TRI, Nifty 500 TRI, Midcap/Smallcap TRI & Asset-Matched Blended Benchmark`}
+          entityName={activeClientData.investorName}
+          pan={activeClientData.pan}
+          ucc={activeClientData.ucc}
+          totalInvested={activeClientData.totalInvested}
+          currentValue={activeClientData.currentValue}
+          portfolioXirr={activeClientData.portfolioXirr}
+          assetAllocation={activeClientData.assetAllocation}
+          marketCapAllocation={
+            selectedClient === 'ramesh'
+              ? { largeCapPct: 74.5, midCapPct: 10.2, smallCapPct: 6.3, debtCashPct: 9.0 }
+              : selectedClient === 'sunita'
+              ? { largeCapPct: 18.4, midCapPct: 44.6, smallCapPct: 32.2, debtCashPct: 4.8 }
+              : { largeCapPct: 34.0, midCapPct: 6.5, smallCapPct: 2.0, debtCashPct: 57.5 }
+          }
+          holdings={(() => {
+            const rawTotals = activeClientData.holdings.map((h: any) => h.units * h.nav);
+            const sumCur = rawTotals.reduce((a: number, b: number) => a + b, 0) || 1;
+            const costRatio = activeClientData.totalInvested / sumCur;
+            return activeClientData.holdings.map((h: any, idx: number) => {
+              const cur = Math.round(rawTotals[idx]);
+              const inv = Math.round(cur * Math.max(0.45, Math.min(0.95, costRatio * (1 + (15 - h.xirr) * 0.015))));
+              return {
+                name: h.name,
+                invested: inv,
+                currentValue: cur,
+                xirr: h.xirr,
+                category: h.type
+              };
+            });
+          })()}
+          sectorBreakdown={activeClientData.sectorBreakdown}
+          userRole="MFD"
+          defaultBenchmark={
+            selectedClient === 'sunita'
+              ? 'NIFTY_MIDCAP_150_TRI'
+              : selectedClient === 'vikram'
+              ? 'CUSTOM_BLENDED'
+              : 'NIFTY_50_TRI'
+          }
+        />
+      )}
 
       {/* Capital Gains View */}
       {activeTab === 'tax' && (

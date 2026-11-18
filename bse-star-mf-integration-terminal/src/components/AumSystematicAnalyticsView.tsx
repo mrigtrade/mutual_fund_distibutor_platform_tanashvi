@@ -24,10 +24,12 @@ import {
   Users, 
   Layers, 
   Clock,
-  Briefcase
+  Briefcase,
+  Activity
 } from 'lucide-react';
 import { ActiveUserSession, SubDistributor } from '../types/bse';
 import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
+import { PortfolioChartsAndBenchmark } from './PortfolioChartsAndBenchmark';
 
 interface SystematicRecord {
   id: string;
@@ -182,6 +184,7 @@ export const AumSystematicAnalyticsView: React.FC<AumSystematicAnalyticsViewProp
 }) => {
   const [selectedType, setSelectedType] = useState<'ALL' | 'SIP' | 'STP' | 'SWP'>('ALL');
   const [searchFilter, setSearchFilter] = useState('');
+  const [viewMode, setViewMode] = useState<'overview' | 'charts'>('overview');
 
   // Scoped Data Multipliers based on Role
   const isSuperAdmin = currentSession.role === 'PLATFORM_SUPER_ADMIN' || currentSession.role === 'MASTER_MFD';
@@ -364,6 +367,77 @@ export const AumSystematicAnalyticsView: React.FC<AumSystematicAnalyticsViewProp
         </div>
       </div>
 
+      {/* View Switcher Bar */}
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+        <button
+          onClick={() => setViewMode('overview')}
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
+            viewMode === 'overview'
+              ? 'bg-[#c5a059] text-slate-950 shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Briefcase className="w-3.5 h-3.5" />
+          <span>AUM & Systematic Ledger</span>
+        </button>
+        <button
+          onClick={() => setViewMode('charts')}
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
+            viewMode === 'charts'
+              ? 'bg-[#c5a059] text-slate-950 shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Activity className="w-3.5 h-3.5" />
+          <span>Book Charts & Benchmark TRI</span>
+        </button>
+      </div>
+
+      {viewMode === 'charts' ? (
+        <PortfolioChartsAndBenchmark
+          title={`${isSuperAdmin ? 'Platform-Wide' : currentSession.name} AUM Book vs. Benchmark`}
+          subtitle={`${bookMetrics.roleLabel} · Benchmark aggregate advised wealth against Nifty 50 / Nifty 500 TRI & Blended Asset Mix`}
+          entityName={isSuperAdmin ? 'Tanashvi Consolidated Book' : currentSession.name}
+          totalInvested={Math.round(bookMetrics.totalAumCr * 10000000 * 0.66)}
+          currentValue={Math.round(bookMetrics.totalAumCr * 10000000)}
+          portfolioXirr={isSuperAdmin ? 16.85 : isNetwork ? 17.42 : 16.15}
+          assetAllocation={{
+            equityPct: 68.4,
+            debtPct: 18.2,
+            hybridPct: 9.8,
+            liquidPct: 3.6
+          }}
+          marketCapAllocation={{
+            largeCapPct: 48.2,
+            midCapPct: 18.5,
+            smallCapPct: 11.5,
+            debtCashPct: 21.8
+          }}
+          holdings={amcConcentration.map((amc, i) => {
+            const cur = Math.round(parseFloat(amc.aumCr) * 10000000);
+            const inv = Math.round(cur * (0.62 + i * 0.02));
+            return {
+              name: amc.name,
+              invested: inv,
+              currentValue: cur,
+              xirr: Number((18.2 - i * 0.7).toFixed(1)),
+              category: 'AMC Book'
+            };
+          })}
+          sectorBreakdown={[
+            { sector: 'Financial Services', weight: 29.4, color: 'bg-[#c5a059]' },
+            { sector: 'Information Technology', weight: 15.8, color: 'bg-sky-500' },
+            { sector: 'Consumer & FMCG', weight: 12.6, color: 'bg-emerald-500' },
+            { sector: 'Oil, Gas & Power', weight: 10.4, color: 'bg-purple-500' },
+            { sector: 'Capital Goods & Auto', weight: 11.8, color: 'bg-amber-500' },
+            { sector: 'Debt, G-Sec & Cash', weight: 20.0, color: 'bg-slate-600' }
+          ]}
+          userRole={isSuperAdmin ? 'PROMOTER' : isNetwork ? 'NETWORK_MFD' : 'MFD'}
+          defaultBenchmark="NIFTY_500_TRI"
+          isBookLevel={true}
+        />
+      ) : (
+        <>
       {/* 4 Primary Systematic KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total AUM */}
@@ -621,6 +695,8 @@ export const AumSystematicAnalyticsView: React.FC<AumSystematicAnalyticsViewProp
           </table>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };

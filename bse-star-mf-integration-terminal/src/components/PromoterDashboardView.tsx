@@ -24,6 +24,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
+import { PortfolioChartsAndBenchmark } from './PortfolioChartsAndBenchmark';
 
 interface TenantMfd {
   id: string;
@@ -158,7 +159,7 @@ const MOCK_TENANTS: TenantMfd[] = [
 ];
 
 export const PromoterDashboardView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'tenants' | 'telemetry' | 'audit' | 'revenue'>('tenants');
+  const [activeTab, setActiveTab] = useState<'tenants' | 'benchmarks' | 'telemetry' | 'audit' | 'revenue'>('tenants');
   const [searchFilter, setSearchFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'STANDALONE' | 'NETWORK'>('ALL');
 
@@ -361,10 +362,10 @@ export const PromoterDashboardView: React.FC = () => {
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('tenants')}
-          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
             activeTab === 'tenants'
               ? 'bg-[#c5a059] text-slate-950 shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -372,6 +373,18 @@ export const PromoterDashboardView: React.FC = () => {
         >
           <Building2 className="w-3.5 h-3.5" />
           <span>Subscribed MFD Directory ({filteredTenants.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('benchmarks')}
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 shrink-0 ${
+            activeTab === 'benchmarks'
+              ? 'bg-[#c5a059] text-slate-950 shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <TrendingUp className="w-3.5 h-3.5" />
+          <span>Platform AUM Charts & TRI Manager</span>
         </button>
 
         <button
@@ -410,6 +423,52 @@ export const PromoterDashboardView: React.FC = () => {
           <span>SaaS Revenue & Billing</span>
         </button>
       </div>
+
+      {/* Tab: Platform AUM Charts & Benchmark TRI Data Manager */}
+      {activeTab === 'benchmarks' && (
+        <PortfolioChartsAndBenchmark
+          title="Tanashvi Platform Consolidated AUM vs. Market Benchmarks (TRI)"
+          subtitle={`Aggregated performance across ${totalMfCount} subscribed MFD firms (₹${totalAumCr.toFixed(1)} Cr) · Manage & sync platform-wide TRI benchmark indices`}
+          entityName="Tanashvi Platform Consolidated AUM"
+          totalInvested={Math.round(totalAumCr * 10000000 * 0.65)}
+          currentValue={Math.round(totalAumCr * 10000000)}
+          portfolioXirr={17.15}
+          assetAllocation={{
+            equityPct: 68.4,
+            debtPct: 18.2,
+            hybridPct: 9.8,
+            liquidPct: 3.6
+          }}
+          marketCapAllocation={{
+            largeCapPct: 48.2,
+            midCapPct: 18.5,
+            smallCapPct: 11.5,
+            debtCashPct: 21.8
+          }}
+          holdings={MOCK_TENANTS.slice(0, 6).map((t, idx) => {
+            const cur = Math.round(t.aumCr * 10000000);
+            const inv = Math.round(cur * (0.63 + idx * 0.015));
+            return {
+              name: `${t.orgName} (${t.arn})`,
+              invested: inv,
+              currentValue: cur,
+              xirr: Number((18.4 - idx * 0.45).toFixed(1)),
+              category: t.category
+            };
+          })}
+          sectorBreakdown={[
+            { sector: 'Financial Services', weight: 29.4, color: 'bg-[#c5a059]' },
+            { sector: 'Information Technology', weight: 15.8, color: 'bg-sky-500' },
+            { sector: 'Consumer & FMCG', weight: 12.6, color: 'bg-emerald-500' },
+            { sector: 'Oil, Gas & Power', weight: 10.4, color: 'bg-purple-500' },
+            { sector: 'Capital Goods & Auto', weight: 11.8, color: 'bg-amber-500' },
+            { sector: 'Debt, G-Sec & Cash', weight: 20.0, color: 'bg-slate-600' }
+          ]}
+          userRole="PROMOTER"
+          defaultBenchmark="NIFTY_500_TRI"
+          isBookLevel={true}
+        />
+      )}
 
       {/* Tab 1: MFD Directory */}
       {activeTab === 'tenants' && (
