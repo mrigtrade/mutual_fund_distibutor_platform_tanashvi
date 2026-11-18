@@ -133,7 +133,11 @@ export class BseGatewayService {
       return { accessToken: this.cachedToken, expiresIn: this.tokenExpiry - now };
     }
 
-    const loginUser = username || process.env.BSE_USERNAME || 'tanashvifintechpvtltd';
+    const rawUser = username || process.env.BSE_USERNAME || 'tanashvifintechpvtltd';
+    // Official BSE StAR MF v2 format: member/<member_code>/<user_id>
+    const loginUser = rawUser.startsWith('member/')
+      ? rawUser
+      : `member/${this.config.memberCode}/${rawUser}`;
     const loginPass = password || process.env.BSE_PASSWORD || '94515@Xyz';
 
     const loginPayload = {

@@ -330,30 +330,32 @@ All communication with BSE StAR MF v2 endpoints strictly adheres to the **JOSE (
 * **Official BSE StAR MF v2 UAT Credentials (Allocated Nov 13):**
   * **Member ID:** `94515`
   * **User ID:** `tanashvifintechpvtltd`
+  * **Official v2 API Login Username Format:** `member/94515/tanashvifintechpvtltd` *(per official BSE StAR MF 2.0 Postman Collection)*
   * **Password:** `94515@Xyz`
   * **UAT Demo Gateway URL:** `https://starmfv2demo.bseindia.com/api`
 * **Automated Diagnostic & Verification Suite:**
-  * Created `bse-star-backend/scripts/verify_bse_uat.js` and `setup_and_test_on_server.sh` for single-command UAT verification on the Ubuntu server.
+  * Created `bse-star-backend/scripts/verify_bse_uat.js` and `setup_and_test_on_server.sh` for single-command UAT verification (`/api/login` + `/api/master_scheme_list`) on the Ubuntu server.
 
-### Phase 15: Portfolio Visualization & Multi-Benchmark TRI Engine (All User Levels)
-* **Interactive Visual Charts & Multi-Benchmark Comparison:**
+### Phase 15: Portfolio Visualization, Diversification & Multi-Benchmark TRI Engine (All User Levels)
+* **Interactive Visual Charts, Diversification Tracker & Multi-Benchmark Comparison:**
   * Supports **Nifty 50 TRI**, **Nifty 500 TRI**, **Nifty Midcap 150 TRI**, **Nifty Smallcap 250 TRI**, **BSE Sensex TRI**, **CRISIL Short Term Debt Index**, and an auto-weighted **SEBI-Style Custom Blended Benchmark**.
-  * Dual-series SVG Portfolio vs. Benchmark curve (`₹ Wealth Growth` & `Base 100`), hover crosshair tooltips, Alpha Scorecard (`Portfolio XIRR vs. Benchmark XIRR`, `Net Alpha`, `Extra Wealth in ₹`, `Max Drawdown`, `Beta`, `Up/Down Capture`), interactive Asset & Market-Cap Donuts, Scheme Invested vs. Current Value Bars, and Branded PDF/XLS export.
+  * Dual-series SVG Portfolio vs. Benchmark curve (`₹ Wealth Growth` & `Base 100`), hover crosshair tooltips, Alpha Scorecard (`Portfolio XIRR vs. Benchmark XIRR`, `Net Alpha`, `Extra Wealth in ₹`, `Max Drawdown`, `Beta`, `Up/Down Capture`), interactive Asset & Market-Cap Donuts, **Portfolio Diversification & Fund Overlap Tracker** (0–100 score ring, Unique vs. Overlapping stacked bar, estimated unique stocks, and fund-to-fund pairwise overlap matrix with shared holdings), Scheme Invested vs. Current Value Bars, and Branded PDF/XLS export.
   * Deployed across **all 4 user levels**: End Investor (`InvestorPortalView`), Standalone & Network MFDs (`PortfolioTaxView` + `AumSystematicAnalyticsView`), and Tanashvi Promoters/HQ (`PromoterDashboardView`).
 * **Keeping Benchmark TRI Data Updated:**
   * **One-Click Live Sync:** `POST /api/v1/benchmarks/sync` (and UI `Sync Live TRI` button) fetches live daily EOD TRI proxies from open AMFI Direct Index feeds (`api.mfapi.in`).
   * **Official NSE/BSE TRI CSV Import:** `POST /api/v1/benchmarks/import` (and UI CSV uploader) parses official `niftyindices.com` / `asiaindices.co.in` TRI CSV exports.
   * **Manual EOD Override & Weekday Server Cron:** `POST /api/v1/benchmarks/manual` + `bse-star-backend/scripts/sync_benchmarks_eod.js` for automated Mon–Fri 22:00 IST cron sync on Oracle Cloud.
 
-### Phase 16: "Tanu" — Cute Wise Owl AI Portfolio Storyteller
-* **Animated Expressive Mascot & Stage Choreography:**
-  * Custom Tanashvi Navy & Gold animated SVG wise owl (**Tanu**) powered by `motion/react` spring physics: walks across the stage, blinks naturally, moves its beak while speaking, and shifts facial expressions/wing gestures (`WAVING`, `HAPPY`, `CELEBRATING`, `REASSURING`, `THINKING`, `POINTING`) dynamically based on portfolio performance.
-* **Last-Login & Custom Date-Range Storyboard:**
-  * Defaults to the investor's **Last Login Date $\rightarrow$ Today** (persisted per UCC) with inline custom date pickers and presets (`Since Last Login`, `30 Days`, `3 Months`, `1 Year`) + benchmark selector (`Nifty 50 TRI`, `Nifty 500 TRI`, `Midcap 150 TRI`, `Blended Auto-Mix`).
-  * Pulls out 5 animated visual cards onto stage: Period Wealth Delta, Top Movers & SIP Activity, Mini Benchmark Line Chart, Allocation Donut, and Interactive "Ask Tanu" Q&A + Human MFD Advisor Callback.
-* **Indian English Voice (`en-IN`) + Live Subtitles + Zero-Hallucination AI:**
-  * Built-in **Sound On/Off** toggle selecting Indian English (`en-IN`) voices via Web Speech API alongside an always-visible **Dialogue Subtitles Teleprompter**.
-  * **Zero-Hallucination Split:** Deterministic TypeScript engine computes 100% of figures; optional Gemini 2.5 Flash (`@google/genai`) polishes narration & Q&A using strictly anonymized non-PII data, with seamless offline fallback and a permanent **AI & SEBI Compliance Caveat Banner**.
+### Phase 16: "Tanu" — Cute Wise Owl AI Portfolio Storyteller & Interactive Presentation
+* **Animated Presenter Mascot & Bottom Runway Choreography:**
+  * Custom Tanashvi Navy & Gold animated SVG wise owl (**Tanu**) powered by `motion/react` spring physics: walks smoothly across a dedicated **bottom presenter runway** beneath full-width chart slides (`10% → 30% → 50% → 70% → 84%`), pointing upward toward each slide, blinking naturally, moving its beak while speaking, and shifting expressions (`WAVING`, `HAPPY`, `CELEBRATING`, `REASSURING`, `THINKING`, `POINTING`).
+* **Full-Width Graphical Presentation Slides (Last Login → Today & Custom Dates):**
+  * Defaults to the investor's **Last Login Date → Today** (persisted per UCC) with inline custom date pickers, quick presets (`Last Login`, `30D`, `3M`, `1Y`), and benchmark selector (`Nifty 50 TRI`, `Nifty 500 TRI`, `Midcap 150 TRI`, `Blended Mix`).
+  * Every slide presents unobstructed full-width animated graphs: **(1)** Portfolio Growth Area Graph, **(2)** Scheme-Wise Return Bar Chart + SIP Execution Summary, **(3)** Dual-Line Benchmark Comparison Graph, **(4)** Asset Allocation Donut + Fund Diversification/Overlap Gauge, and **(5)** Illustrative 5-Year Wealth Compounding Bar Graph.
+* **Pure Indian-English Voice (`en-IN`), Toggleable Subtitles & Dedicated Chat Drawer:**
+  * Strictly filters browser Web Speech voices to **pure English (`en-IN` prioritized)** with zero regional-language leakage, optional voice selector, smooth token-guarded Auto-Play, and a compact toggleable **`CC` Subtitles** strip.
+  * **Dedicated Right-Side "Chat with Tanu" Panel** accessible from any slide (halts slide playback to focus solely on user queries) featuring **10 curated everyday investor questions** (market outperformance, top/lagging funds, SIP dips, overlap/diversification, risk, crash resilience, Budget 2024 withdrawal tax, XIRR explained, and advisor connect).
+  * **Zero-Hallucination Split & SEBI Guardrails:** Deterministic TypeScript math + optional Gemini 2.5 Flash (`@google/genai`, strictly anonymized non-PII facts) with offline fallback and a permanent **AI & SEBI Caveat Banner**.
   * Available in **End Investor Portal** (floating Tanu Owl launcher + header button) and **MFD Portfolio & Tax** (`Play Client Story (Tanu)` button for client review meetings).
 
 ---
