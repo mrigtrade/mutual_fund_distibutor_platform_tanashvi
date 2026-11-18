@@ -23,6 +23,7 @@ import taxRoutes from './routes/taxRoutes.js';
 import proposalRoutes from './routes/proposalRoutes.js';
 import researchRoutes from './routes/researchRoutes.js';
 import benchmarkRoutes from './routes/benchmarkRoutes.js';
+import bseUatRoutes from './routes/bseUatRoutes.js';
 import { globalErrorHandler } from './middleware/errorHandler.js';
 import { BseGatewayService } from './services/bseGatewayService.js';
 
@@ -33,6 +34,27 @@ export function createApp(): Express {
   app.use(cors());
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+  // Root Welcome Banner
+  app.get('/', (req: Request, res: Response) => {
+    const bseService = BseGatewayService.getInstance();
+    res.status(200).json({
+      platform: 'Tanashvi B2B Mutual Fund Platform — BSE StAR MF v2.0 API Gateway',
+      entity: 'Tanashvi Fintech Private Limited (ARN-347849)',
+      bse_member_code: bseService.getMemberCode(),
+      status: 'ONLINE',
+      endpoints: {
+        health: '/health',
+        bse_uat_live_status: '/api/v1/bse-uat/status',
+        bse_uat_live_schemes: '/api/v1/bse-uat/schemes?search=HDFC&length=5',
+        bse_uat_live_nav: '/api/v1/bse-uat/nav?length=5',
+        benchmarks: '/api/v1/benchmarks',
+        calculators: '/api/v1/calculators',
+        research: '/api/v1/research'
+      },
+      timestamp: new Date().toISOString()
+    });
+  });
 
   // System Health & Diagnostics Endpoint
   app.get('/health', (req: Request, res: Response) => {
@@ -61,6 +83,7 @@ export function createApp(): Express {
   app.use('/api/v1/proposals', proposalRoutes);
   app.use('/api/v1/research', researchRoutes);
   app.use('/api/v1/benchmarks', benchmarkRoutes);
+  app.use('/api/v1/bse-uat', bseUatRoutes);
 
   // 404 Not Found Handler
   app.use((req: Request, res: Response) => {
