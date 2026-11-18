@@ -345,6 +345,17 @@ All communication with BSE StAR MF v2 endpoints strictly adheres to the **JOSE (
   * **Official NSE/BSE TRI CSV Import:** `POST /api/v1/benchmarks/import` (and UI CSV uploader) parses official `niftyindices.com` / `asiaindices.co.in` TRI CSV exports.
   * **Manual EOD Override & Weekday Server Cron:** `POST /api/v1/benchmarks/manual` + `bse-star-backend/scripts/sync_benchmarks_eod.js` for automated Mon–Fri 22:00 IST cron sync on Oracle Cloud.
 
+### Phase 16: "Tanu" — Cute Wise Owl AI Portfolio Storyteller
+* **Animated Expressive Mascot & Stage Choreography:**
+  * Custom Tanashvi Navy & Gold animated SVG wise owl (**Tanu**) powered by `motion/react` spring physics: walks across the stage, blinks naturally, moves its beak while speaking, and shifts facial expressions/wing gestures (`WAVING`, `HAPPY`, `CELEBRATING`, `REASSURING`, `THINKING`, `POINTING`) dynamically based on portfolio performance.
+* **Last-Login & Custom Date-Range Storyboard:**
+  * Defaults to the investor's **Last Login Date $\rightarrow$ Today** (persisted per UCC) with inline custom date pickers and presets (`Since Last Login`, `30 Days`, `3 Months`, `1 Year`) + benchmark selector (`Nifty 50 TRI`, `Nifty 500 TRI`, `Midcap 150 TRI`, `Blended Auto-Mix`).
+  * Pulls out 5 animated visual cards onto stage: Period Wealth Delta, Top Movers & SIP Activity, Mini Benchmark Line Chart, Allocation Donut, and Interactive "Ask Tanu" Q&A + Human MFD Advisor Callback.
+* **Indian English Voice (`en-IN`) + Live Subtitles + Zero-Hallucination AI:**
+  * Built-in **Sound On/Off** toggle selecting Indian English (`en-IN`) voices via Web Speech API alongside an always-visible **Dialogue Subtitles Teleprompter**.
+  * **Zero-Hallucination Split:** Deterministic TypeScript engine computes 100% of figures; optional Gemini 2.5 Flash (`@google/genai`) polishes narration & Q&A using strictly anonymized non-PII data, with seamless offline fallback and a permanent **AI & SEBI Compliance Caveat Banner**.
+  * Available in **End Investor Portal** (floating Tanu Owl launcher + header button) and **MFD Portfolio & Tax** (`Play Client Story (Tanu)` button for client review meetings).
+
 ---
 
 ### Build & Run Offline Testbenches

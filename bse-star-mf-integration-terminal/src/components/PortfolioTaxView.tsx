@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { PieChart, TrendingUp, ShieldCheck, FileText, CheckCircle2, AlertCircle, Download, ArrowUpRight, DollarSign, FileSpreadsheet, Layers, Info, Activity } from 'lucide-react';
+import { PieChart, TrendingUp, ShieldCheck, FileText, CheckCircle2, AlertCircle, Download, ArrowUpRight, DollarSign, FileSpreadsheet, Layers, Info, Activity, Sparkles } from 'lucide-react';
 import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
 import { PortfolioChartsAndBenchmark } from './PortfolioChartsAndBenchmark';
+import { TanuStoryWalkthroughModal } from './TanuStoryWalkthroughModal';
 
 export const PortfolioTaxView: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState<'ramesh' | 'sunita' | 'vikram'>('ramesh');
   const [selectedFy, setSelectedFy] = useState<'2024-2025' | '2025-2026'>('2024-2025');
   const [activeTab, setActiveTab] = useState<'portfolio' | 'charts' | 'tax' | 'stocks' | 'cas'>('tax');
+  const [showClientStory, setShowClientStory] = useState(false);
 
   const CLIENTS_DATA: Record<string, any> = {
     ramesh: {
@@ -600,6 +602,15 @@ export const PortfolioTaxView: React.FC = () => {
             >
               <Layers className="w-4 h-4" />
               Underlying Shares & Sectors
+            </button>
+
+            <button
+              onClick={() => setShowClientStory(true)}
+              className="px-3 py-2 bg-indigo-950/90 hover:bg-indigo-900 text-[#f3d893] border border-[#c5a059]/60 font-semibold rounded-lg text-xs flex items-center gap-1.5 shadow cursor-pointer transition-all"
+              title="Play Tanu the Wise Owl interactive portfolio story for client review meetings"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#c5a059]" />
+              <span>Play Client Story (Tanu)</span>
             </button>
 
             {activeTab === 'stocks' ? (
@@ -1218,6 +1229,39 @@ export const PortfolioTaxView: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Tanu Wise Owl Interactive Client Review Storyteller */}
+      <TanuStoryWalkthroughModal
+        isOpen={showClientStory}
+        onClose={() => setShowClientStory(false)}
+        launchedByMfd={true}
+        portfolio={{
+          investorName: activeClientData.investorName,
+          ucc: activeClientData.ucc,
+          advisorName: 'Tanashvi Wealth Advisory',
+          advisorArn: 'ARN-347849',
+          totalInvested: activeClientData.totalInvested,
+          currentValue: activeClientData.currentValue,
+          portfolioXirr: activeClientData.portfolioXirr,
+          monthlySipTotal: selectedClient === 'sunita' ? 35000 : selectedClient === 'vikram' ? 0 : 15000,
+          assetAllocation: activeClientData.assetAllocation,
+          holdings: (() => {
+            const rawTotals = activeClientData.holdings.map((h: any) => h.units * h.nav);
+            const sumCur = rawTotals.reduce((a: number, b: number) => a + b, 0) || 1;
+            const costRatio = activeClientData.totalInvested / sumCur;
+            return activeClientData.holdings.map((h: any, idx: number) => {
+              const cur = Math.round(rawTotals[idx]);
+              const inv = Math.round(cur * Math.max(0.45, Math.min(0.95, costRatio)));
+              return {
+                name: h.name,
+                invested: inv,
+                currentValue: cur,
+                xirr: h.xirr,
+                category: h.type
+              };
+            });
+          })()
+        }}
+      />
     </div>
   );
 };

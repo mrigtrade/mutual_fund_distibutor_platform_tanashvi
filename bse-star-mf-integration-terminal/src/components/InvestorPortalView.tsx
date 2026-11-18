@@ -24,14 +24,18 @@ import {
   CreditCard,
   Layers,
   Info,
-  Activity
+  Activity,
+  Sparkles
 } from 'lucide-react';
 import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
 import { PortfolioChartsAndBenchmark } from './PortfolioChartsAndBenchmark';
+import { TanuOwlMascot } from './TanuOwlMascot';
+import { TanuStoryWalkthroughModal } from './TanuStoryWalkthroughModal';
 
 export const InvestorPortalView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'holdings' | 'charts' | 'stocks' | 'sips' | 'proposals' | 'tax'>('holdings');
   const [cartExecuted, setCartExecuted] = useState(false);
+  const [showTanuStory, setShowTanuStory] = useState(false);
 
   const investor = {
     name: 'Ramesh Sharma',
@@ -277,7 +281,16 @@ export const InvestorPortalView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowTanuStory(true)}
+              className="px-3.5 py-2 bg-indigo-950/90 hover:bg-indigo-900 text-[#f3d893] border border-[#c5a059]/60 font-semibold text-xs rounded-lg shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Let Tanu the Wise Owl walk you through your portfolio since your last login"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#c5a059]" />
+              <span>Ask Tanu (Owl Story)</span>
+            </button>
+
             {activeTab === 'stocks' ? (
               <>
                 <button
@@ -817,6 +830,56 @@ export const InvestorPortalView: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Floating Animated Tanu Owl Launcher (End Investor Companion) */}
+      <div className="fixed bottom-5 right-5 z-40 flex items-end gap-2.5">
+        <button
+          onClick={() => setShowTanuStory(true)}
+          className="hidden sm:flex items-center gap-2 bg-[#0a192f]/95 hover:bg-[#13294b] border border-[#c5a059]/60 text-slate-100 text-xs font-medium px-3.5 py-2.5 rounded-2xl rounded-br-sm shadow-2xl transition-all cursor-pointer group"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-[#c5a059] shrink-0" />
+          <span>
+            Hi {investor.name.split(' ')[0]}! <strong className="text-[#c5a059] group-hover:underline">Walk through your portfolio?</strong>
+          </span>
+        </button>
+
+        <button
+          onClick={() => setShowTanuStory(true)}
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-[#0f2340] to-[#1e3a5f] border-2 border-[#c5a059] shadow-[0_8px_30px_rgba(197,160,89,0.35)] flex items-center justify-center hover:scale-105 transition-transform cursor-pointer relative"
+          title="Invoke Tanu — Your Wise Portfolio Owl"
+          aria-label="Open Tanu Portfolio Storyteller"
+        >
+          <TanuOwlMascot mood="WAVING" size={56} />
+          <span className="w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-950 absolute top-0.5 right-0.5" />
+        </button>
+      </div>
+
+      {/* Tanu Wise Owl Animated Walkthrough Modal */}
+      <TanuStoryWalkthroughModal
+        isOpen={showTanuStory}
+        onClose={() => setShowTanuStory(false)}
+        portfolio={{
+          investorName: investor.name,
+          ucc: investor.ucc,
+          advisorName: investor.distributorName,
+          advisorArn: investor.arn,
+          totalInvested: investor.totalInvested,
+          currentValue: investor.currentValue,
+          portfolioXirr: investor.portfolioXirr,
+          monthlySipTotal: investor.activeSipTotal,
+          assetAllocation: {
+            equityPct: investor.allocation.equityPct,
+            debtPct: investor.allocation.debtPct,
+            liquidPct: investor.allocation.liquidPct
+          },
+          holdings: investor.holdings.map(h => ({
+            name: h.name,
+            invested: h.invested,
+            currentValue: h.curVal,
+            xirr: h.xirr,
+            category: h.category
+          }))
+        }}
+      />
     </div>
   );
 };

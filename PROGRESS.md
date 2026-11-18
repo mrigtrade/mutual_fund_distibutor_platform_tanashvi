@@ -362,6 +362,22 @@
 
 ---
 
+### Phase 16: "Tanu" — Cute Wise Owl AI Portfolio Storyteller & Interactive Walkthrough
+* **Animated Expressive Owl Mascot ([`TanuOwlMascot.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/TanuOwlMascot.tsx)):**
+  * Bespoke Tanashvi Navy & Gold SVG owl mascot with spectacles, natural eye blinking, beak lip-sync animation while speaking, stepping feet while walking across stage, and 6 dynamic mood states (`WAVING`, `HAPPY`, `CELEBRATING`, `REASSURING`, `THINKING`, `POINTING`).
+* **Zero-Hallucination AI Story Engine ([`tanuStoryEngine.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/utils/tanuStoryEngine.ts)):**
+  * **Deterministic Math Split:** Computes exact period returns, ₹ delta, SIP count, top/secondary fund drivers, benchmark TRI period return, and mini chart curves between any two dates (defaulting to the investor's **Last Login Date $\rightarrow$ Today**, persisted per UCC).
+  * **Optional Gemini 2.5 Flash Enhancement (`@google/genai`):** Receives strictly anonymized non-PII facts to craft warm Indian-English narration & answer investor follow-up questions, with instant deterministic offline fallback.
+  * **Indian English Voice Narration (`en-IN`) + Live Subtitles:** Uses Web Speech API selecting `en-IN` voices with Sound On/Off toggle and always-visible teleprompter subtitles.
+* **5-Scene Animated Stage ([`TanuStoryWalkthroughModal.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/TanuStoryWalkthroughModal.tsx)):**
+  * Tanu walks smoothly across the stage (`motion/react` spring physics) and pulls out animated chart cards: Period Wealth Delta, Top Movers & SIP Activity, Animated Mini Benchmark Line Chart, Animated Allocation Donut, and Interactive "Ask Tanu" Q&A + Human MFD Advisor Callback.
+  * Permanent **AI & SEBI Regulatory Caveat Banner** (educational/informational only; never autonomous buy/sell recommendations).
+* **Deployed For Both Investors & MFDs:**
+  * **End Investor Portal (`InvestorPortalView.tsx`):** Floating animated Tanu Owl launcher in bottom-right corner + top banner `Ask Tanu (Owl Story)` CTA.
+  * **MFD Portfolio & Tax (`PortfolioTaxView.tsx`):** `Play Client Story (Tanu)` button for live client review meetings across all client profiles.
+
+---
+
 ## 📌 Quick Context & Key Credentials Reference
 
 * **Entity:** Tanashvi Fintech Private Limited
