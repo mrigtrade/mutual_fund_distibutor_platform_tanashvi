@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { TanuOwlMascot } from './TanuOwlMascot';
 import {
+  DEFAULT_INVESTOR_QUESTIONS,
   TanuMood,
   TanuPortfolioInput,
   TanuScene,
@@ -105,17 +106,49 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [qaInput, setQaInput] = useState<string>('');
   const [chatOverrideMood, setChatOverrideMood] = useState<TanuMood | null>(null);
-  const [activeSpokenText, setActiveSpokenText] = useState<string>('');
+  const [chatSubtitleText, setChatSubtitleText] = useState<string>('');
   const [isAsking, setIsAsking] = useState<boolean>(false);
   const [advisorPinged, setAdvisorPinged] = useState<boolean>(false);
 
   const autoPlayTimerRef = useRef<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const autoPlayRef = useRef<boolean>(autoPlay);
+  const isChatOpenRef = useRef<boolean>(isChatOpen);
+  const isSpeakingRef = useRef<boolean>(isSpeaking);
+  const sceneIdxRef = useRef<number>(sceneIdx);
+  const scenesLenRef = useRef<number>(scenes.length);
+
+  useEffect(() => {
+    autoPlayRef.current = autoPlay;
+  }, [autoPlay]);
+
+  useEffect(() => {
+    isChatOpenRef.current = isChatOpen;
+  }, [isChatOpen]);
+
+  useEffect(() => {
+    isSpeakingRef.current = isSpeaking;
+  }, [isSpeaking]);
+
+  useEffect(() => {
+    sceneIdxRef.current = sceneIdx;
+  }, [sceneIdx]);
+
+  useEffect(() => {
+    scenesLenRef.current = scenes.length;
+  }, [scenes.length]);
 
   const snapshot = useMemo(
     () => computePeriodSnapshot(portfolio, startDate, endDate, benchmarkId, preset === 'LAST_LOGIN'),
     [portfolio, startDate, endDate, benchmarkId, preset]
   );
+
+  const clearAutoPlayTimer = () => {
+    if (autoPlayTimerRef.current) {
+      window.clearTimeout(autoPlayTimerRef.current);
+      autoPlayTimerRef.current = null;
+    }
+  };
 
   // Load strictly Pure English voices
   useEffect(() => {
@@ -139,14 +172,18 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
   // Build Storyboard when modal opens or date/benchmark changes
   useEffect(() => {
     if (!isOpen) {
+      clearAutoPlayTimer();
       stopTanuSpeech();
       setIsSpeaking(false);
       return;
     }
 
     let cancelled = false;
+    clearAutoPlayTimer();
+    stopTanuSpeech();
     setIsLoadingStory(true);
     setChatOverrideMood(null);
+    setChatSubtitleText('');
     setAdvisorPinged(false);
 
     // Seed welcoming starter message in Chat drawer
@@ -154,7 +191,7 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
       {
         id: 'welcome-msg',
         sender: 'tanu',
-        text: `Hello ${snapshot.firstName}! Ask me anything in plain English about your portfolio between ${formatNiceDate(startDate)} and ${formatNiceDate(endDate)}.`,
+        text: `Hello ${snapshot.firstName}! Click any common question below or type your own query about your portfolio between ${formatNiceDate(startDate)} and ${formatNiceDate(endDate)}.`,
         timestamp: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
       }
     ]);
@@ -164,7 +201,6 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
       setScenes(res.scenes);
       setEngineUsed(res.engineUsed);
       setSceneIdx(0);
-      setActiveSpokenText(res.scenes[0]?.subtitle || '');
       setIsLoadingStory(false);
     });
 
@@ -173,24 +209,17 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
     };
   }, [isOpen, snapshot, startDate, endDate]);
 
-  // Keep spoken text synced when slide changes
-  useEffect(() => {
-    const sc = scenes[sceneIdx];
-    if (sc) {
-      setChatOverrideMood(null);
-      setActiveSpokenText(sc.subtitle);
-    }
-  }, [sceneIdx, scenes]);
-
   // Auto-scroll chat drawer when messages arrive
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, isChatOpen]);
 
   const handleClose = () => {
+    clearAutoPlayTimer();
     stopTanuSpeech();
     setIsSpeaking(false);
     setAutoPlay(false);
+    setIsChatOpen(false);
     saveCurrentVisitDate(portfolio.ucc, todayIso);
     onClose();
   };
@@ -205,30 +234,46 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
 
   const currentScene: TanuScene | undefined = scenes[sceneIdx];
   const activeMood: TanuMood = chatOverrideMood || currentScene?.mood || 'WAVING';
+  const displayedSubtitle = isChatOpen
+    ? chatSubtitleText || `Chat mode active — pick a question on the right or type your own query for Tanu.`
+    : currentScene?.subtitle || '';
 
-  // Speak active dialogue in strict Pure English (Indian Accent)
+  // SLIDE NARRATION EFFECT:
+  // Triggered ONLY when slide index / storyboard / voice changes (NEVER when opening Chat or toggling Auto-Play!)
   useEffect(() => {
-    if (autoPlayTimerRef.current) {
-      window.clearTimeout(autoPlayTimerRef.current);
-      autoPlayTimerRef.current = null;
-    }
-
-    if (!isOpen || !activeSpokenText) {
-      stopTanuSpeech();
-      setIsSpeaking(false);
+    clearAutoPlayTimer();
+    if (!isOpen || isLoadingStory || !currentScene) {
       return;
     }
 
+    // CRITICAL: If user has Chat open, do NOT replay slides — stay focused on user's chat query!
+    if (isChatOpenRef.current) {
+      return;
+    }
+
+    setChatOverrideMood(null);
+    const slideNumberForClosure = sceneIdx;
+    const totalSlides = scenes.length;
+
     if (soundEnabled) {
-      const label = speakTanuDialogue(activeSpokenText, {
+      const label = speakTanuDialogue(currentScene.subtitle, {
         preferredVoiceURI: selectedVoiceURI || undefined,
         onStart: () => setIsSpeaking(true),
-        onEnd: () => {
-          setIsSpeaking(false);
-          if (autoPlay && !isChatOpen && sceneIdx < scenes.length - 1) {
+        onStop: () => setIsSpeaking(false),
+        // Fires ONLY when this exact slide completes speaking naturally (never on cancel/error!)
+        onComplete: () => {
+          if (
+            autoPlayRef.current &&
+            !isChatOpenRef.current &&
+            slideNumberForClosure === sceneIdxRef.current &&
+            slideNumberForClosure < totalSlides - 1
+          ) {
+            clearAutoPlayTimer();
             autoPlayTimerRef.current = window.setTimeout(() => {
-              setSceneIdx(prev => Math.min(scenes.length - 1, prev + 1));
-            }, 900);
+              if (autoPlayRef.current && !isChatOpenRef.current) {
+                setSceneIdx(slideNumberForClosure + 1);
+              }
+            }, 1050);
           }
         }
       });
@@ -236,20 +281,79 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
     } else {
       stopTanuSpeech();
       setIsSpeaking(false);
-      if (autoPlay && !isChatOpen && sceneIdx < scenes.length - 1) {
+      if (autoPlayRef.current && slideNumberForClosure < totalSlides - 1) {
         autoPlayTimerRef.current = window.setTimeout(() => {
-          setSceneIdx(prev => Math.min(scenes.length - 1, prev + 1));
+          if (autoPlayRef.current && !isChatOpenRef.current) {
+            setSceneIdx(slideNumberForClosure + 1);
+          }
         }, 5500);
       }
     }
 
     return () => {
-      if (autoPlayTimerRef.current) window.clearTimeout(autoPlayTimerRef.current);
+      clearAutoPlayTimer();
     };
-  }, [isOpen, activeSpokenText, soundEnabled, selectedVoiceURI, autoPlay, isChatOpen, sceneIdx, scenes.length]);
+  }, [isOpen, isLoadingStory, sceneIdx, scenes, soundEnabled, selectedVoiceURI]);
+
+  // AUTO-PLAY TOGGLE HANDLER (Never cancels/restarts current slide speech!)
+  const handleToggleAutoPlay = () => {
+    const nextAuto = !autoPlay;
+    setAutoPlay(nextAuto);
+    autoPlayRef.current = nextAuto;
+
+    if (!nextAuto) {
+      clearAutoPlayTimer();
+      return;
+    }
+
+    // If user clicks Auto while Chat is open, close Chat and resume from current slide cleanly
+    if (isChatOpen) {
+      setIsChatOpen(false);
+      isChatOpenRef.current = false;
+    }
+
+    // If Tanu already finished speaking the current slide, smoothly step to next slide (or restart from 0 if on last slide)
+    if (!isSpeakingRef.current && scenes.length > 0) {
+      clearAutoPlayTimer();
+      const delayMs = soundEnabled ? 650 : 4500;
+      autoPlayTimerRef.current = window.setTimeout(() => {
+        if (!autoPlayRef.current || isChatOpenRef.current) return;
+        const cur = sceneIdxRef.current;
+        if (cur < scenesLenRef.current - 1) {
+          setSceneIdx(cur + 1);
+        } else {
+          setSceneIdx(0);
+        }
+      }, delayMs);
+    }
+  };
+
+  // DEDICATED "CHAT WITH TANU" TOGGLE:
+  // Opening Chat immediately halts slide playback so Slide 1 NEVER replays!
+  const handleToggleChat = () => {
+    const nextOpen = !isChatOpen;
+    if (nextOpen) {
+      clearAutoPlayTimer();
+      stopTanuSpeech();
+      setIsSpeaking(false);
+      setAutoPlay(false);
+      autoPlayRef.current = false;
+      isChatOpenRef.current = true;
+      setIsChatOpen(true);
+      setChatOverrideMood('WAVING');
+    } else {
+      isChatOpenRef.current = false;
+      setIsChatOpen(false);
+      setChatOverrideMood(null);
+      setChatSubtitleText('');
+    }
+  };
 
   useEffect(() => {
-    return () => stopTanuSpeech();
+    return () => {
+      clearAutoPlayTimer();
+      stopTanuSpeech();
+    };
   }, []);
 
   if (!isOpen) return null;
@@ -276,17 +380,24 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
     const trimmed = qText.trim();
     if (!trimmed || isAsking) return;
 
+    clearAutoPlayTimer();
+    stopTanuSpeech();
+    setIsSpeaking(false);
+    setAutoPlay(false);
+    autoPlayRef.current = false;
+    isChatOpenRef.current = true;
+    setIsChatOpen(true);
+
     const nowTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
     setChatMessages(prev => [...prev, { id: `u-${Date.now()}`, sender: 'user', text: trimmed, timestamp: nowTime }]);
     setQaInput('');
     setIsAsking(true);
-    setAutoPlay(false);
-    setIsChatOpen(true);
+    setChatOverrideMood('THINKING');
 
     try {
       const res = await askTanuQuestion(trimmed, snapshot);
       setChatOverrideMood(res.mood);
-      setActiveSpokenText(res.answer);
+      setChatSubtitleText(res.answer);
       setChatMessages(prev => [
         ...prev,
         {
@@ -296,20 +407,28 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
           timestamp: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
         }
       ]);
+
+      // Speak ONLY Tanu's answer to the user's question (never Slide 1!)
+      if (soundEnabled) {
+        const label = speakTanuDialogue(res.answer, {
+          preferredVoiceURI: selectedVoiceURI || undefined,
+          onStart: () => setIsSpeaking(true),
+          onStop: () => setIsSpeaking(false)
+        });
+        setVoiceLabel(label);
+      }
     } finally {
       setIsAsking(false);
     }
   };
 
   const handleReplayScene = () => {
-    const textToSpeak = currentScene?.subtitle || activeSpokenText;
-    setChatOverrideMood(null);
-    setActiveSpokenText(textToSpeak);
+    const textToSpeak = isChatOpen && chatSubtitleText ? chatSubtitleText : currentScene?.subtitle || '';
     if (soundEnabled && textToSpeak) {
       speakTanuDialogue(textToSpeak, {
         preferredVoiceURI: selectedVoiceURI || undefined,
         onStart: () => setIsSpeaking(true),
-        onEnd: () => setIsSpeaking(false)
+        onStop: () => setIsSpeaking(false)
       });
     }
     setIsWalking(true);
@@ -434,7 +553,7 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
             </button>
 
             <button
-              onClick={() => setAutoPlay(v => !v)}
+              onClick={handleToggleAutoPlay}
               className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border flex items-center gap-1 transition cursor-pointer ${
                 autoPlay
                   ? 'bg-[#c5a059] text-slate-950 border-[#c5a059]'
@@ -445,9 +564,9 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
               <span>{autoPlay ? 'Playing' : 'Auto'}</span>
             </button>
 
-            {/* Dedicated Chat with Tanu Drawer Toggle (Available on EVERY Slide!) */}
+            {/* Dedicated Chat with Tanu Drawer Toggle (Available on EVERY Slide — halts slide playback!) */}
             <button
-              onClick={() => setIsChatOpen(v => !v)}
+              onClick={handleToggleChat}
               className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border flex items-center gap-1.5 transition cursor-pointer ${
                 isChatOpen
                   ? 'bg-sky-500 text-slate-950 border-sky-400 shadow'
@@ -859,7 +978,7 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
                               {!isChatOpen && (
                                 <button
                                   type="button"
-                                  onClick={() => setIsChatOpen(true)}
+                                  onClick={handleToggleChat}
                                   className="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 font-semibold text-[11px] flex items-center gap-1 cursor-pointer"
                                 >
                                   <MessageCircle className="w-3 h-3" />
@@ -951,7 +1070,7 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
                     CC
                   </span>
                   <p className="text-xs sm:text-[13px] text-slate-100 leading-snug font-medium flex-1">
-                    “{activeSpokenText}”
+                    “{displayedSubtitle}”
                   </p>
                 </div>
               )}
@@ -1038,7 +1157,7 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
                     </div>
                   </div>
                   <button
-                    onClick={() => setIsChatOpen(false)}
+                    onClick={handleToggleChat}
                     className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
                     title="Hide Chat Panel"
                   >
@@ -1051,7 +1170,7 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
                   {chatMessages.map(m => (
                     <div key={m.id} className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}>
                       <div
-                        className={`max-w-[90%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
+                        className={`max-w-[92%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
                           m.sender === 'user'
                             ? 'bg-[#c5a059] text-slate-950 font-medium rounded-br-sm'
                             : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-bl-sm'
@@ -1068,23 +1187,25 @@ export const TanuStoryWalkthroughModal: React.FC<TanuStoryWalkthroughModalProps>
                   <div ref={chatEndRef} />
                 </div>
 
-                {/* Quick Starter Questions */}
-                <div className="px-3.5 py-2 border-t border-slate-800/70 flex flex-wrap gap-1.5">
-                  {[
-                    'How diversified is my portfolio?',
-                    'How did I do vs Nifty?',
-                    'How did my SIP help?'
-                  ].map(chip => (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => handleAskQuestion(chip)}
-                      disabled={isAsking}
-                      className="px-2 py-1 rounded-full text-[10px] bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition cursor-pointer"
-                    >
-                      {chip}
-                    </button>
-                  ))}
+                {/* Expanded 10 Common Investor Queries (One-Click Tray) */}
+                <div className="px-3 py-2 border-t border-slate-800/80 bg-[#060b16]">
+                  <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1.5 flex items-center justify-between">
+                    <span>Common Investor Questions</span>
+                    <span className="text-[9px] text-slate-500 font-mono">{DEFAULT_INVESTOR_QUESTIONS.length} topics</span>
+                  </div>
+                  <div className="max-h-[112px] overflow-y-auto pr-1 flex flex-wrap gap-1.5">
+                    {DEFAULT_INVESTOR_QUESTIONS.map(q => (
+                      <button
+                        key={q.label}
+                        type="button"
+                        onClick={() => handleAskQuestion(q.label)}
+                        disabled={isAsking}
+                        className="px-2 py-1 rounded-full text-[10px] bg-slate-900 hover:bg-slate-800 hover:border-[#c5a059]/60 text-slate-200 border border-slate-700/80 transition cursor-pointer text-left"
+                      >
+                        {q.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Input + Human MFD Advisor Connect */}

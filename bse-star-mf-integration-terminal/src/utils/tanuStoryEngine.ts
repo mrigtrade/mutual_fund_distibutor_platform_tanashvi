@@ -494,6 +494,19 @@ ${JSON.stringify(safeFacts)}`;
   };
 }
 
+export const DEFAULT_INVESTOR_QUESTIONS: Array<{ label: string; category: string }> = [
+  { label: 'Did I beat the market (Nifty)?', category: 'Market' },
+  { label: 'Which fund earned the most for me?', category: 'Movers' },
+  { label: 'Which fund lagged behind?', category: 'Movers' },
+  { label: 'How did my SIP help during dips?', category: 'SIP' },
+  { label: 'How diversified is my portfolio?', category: 'Overlap' },
+  { label: 'Is my portfolio too risky right now?', category: 'Risk' },
+  { label: 'What if the market crashes tomorrow?', category: 'Safety' },
+  { label: 'How much tax if I withdraw today?', category: 'Tax' },
+  { label: 'What is XIRR in simple words?', category: 'Basics' },
+  { label: 'Should I invest more or switch funds?', category: 'Advice' }
+];
+
 export async function askTanuQuestion(
   question: string,
   snap: TanuPeriodSnapshot
@@ -509,7 +522,7 @@ export async function askTanuQuestion(
 Answer in 2–3 short, reassuring sentences (max 65 words).
 STRICT SEBI COMPLIANCE: Never recommend buying, selling, redeeming, or switching any scheme. Suggest contacting ${snap.advisorName} (${snap.advisorArn}) for personalized advice.
 Verified period facts (${formatNiceDate(snap.startDate)} to ${formatNiceDate(snap.endDate)}):
-Start: ${formatInrCompact(snap.startValueInr)}, End: ${formatInrCompact(snap.endValueInr)}, Change: ${snap.deltaPct}%, Benchmark ${snap.benchmarkName}: ${snap.benchmarkPeriodPct}%, Top Fund: ${snap.topMover.name} (${snap.topMover.periodPct}%), Equity: ${snap.assetAllocation.equityPct}%, Diversification Score: ${snap.diversification.diversificationScore}/100 (${snap.diversification.weightedOverlapPct}% overlap).
+Start: ${formatInrCompact(snap.startValueInr)}, End: ${formatInrCompact(snap.endValueInr)}, Change: ${snap.deltaPct}%, Overall XIRR: ${snap.portfolioXirr}%, Benchmark ${snap.benchmarkName}: ${snap.benchmarkPeriodPct}%, Top Fund: ${snap.topMover.name} (${snap.topMover.periodPct}%), Equity: ${snap.assetAllocation.equityPct}%, Diversification Score: ${snap.diversification.diversificationScore}/100 (${snap.diversification.weightedOverlapPct}% overlap).
 Investor Question: "${q}"`;
 
       const resp = await ai.models.generateContent({
@@ -525,33 +538,95 @@ Investor Question: "${q}"`;
     }
   }
 
-  if (qLower.includes('overlap') || qLower.includes('diversif')) {
-    return {
-      answer: `Your portfolio has a diversification score of ${snap.diversification.diversificationScore} out of 100, with ${snap.diversification.uniqueExposurePct} percent unique exposure and ${snap.diversification.weightedOverlapPct} percent overlap across roughly ${snap.diversification.estimatedUniqueStocks} underlying securities. ${snap.diversification.verdict}`,
-      mood: 'POINTING',
-      engineUsed: 'TANASHVI_VERIFIED_ENGINE'
-    };
-  }
-
+  // 1. Buy / Sell / Switch (Strict SEBI Boundary)
   if (qLower.includes('buy') || qLower.includes('sell') || qLower.includes('redeem') || qLower.includes('switch') || qLower.includes('invest more')) {
     return {
-      answer: `Good question, ${snap.firstName}! As an AI portfolio guide, I only explain your numbers and never give buy or sell recommendations. For personalised action aligned to your goals, please speak with your AMFI-registered advisor at ${snap.advisorName} (${snap.advisorArn}).`,
+      answer: `Great question, ${snap.firstName}! As an AI portfolio companion, I only explain your portfolio numbers and never give buy, sell, or switch recommendations. For personalised action aligned to your goals, please connect with your AMFI-registered advisor at ${snap.advisorName} (${snap.advisorArn}).`,
       mood: 'REASSURING',
       engineUsed: 'TANASHVI_VERIFIED_ENGINE'
     };
   }
 
-  if (qLower.includes('sip') || qLower.includes('dip') || qLower.includes('fall')) {
+  // 2. Tax on Withdrawal (Indian Budget 2024 Rules)
+  if (qLower.includes('tax') || qLower.includes('withdraw') || qLower.includes('ltcg') || qLower.includes('stcg')) {
     return {
-      answer: `During market dips, your regular SIP buys more mutual fund units at a lower price through rupee-cost averaging. Between ${formatNiceDate(snap.startDate)} and ${formatNiceDate(snap.endDate)}, ${snap.sipInstallmentsInPeriod > 0 ? `${snap.sipInstallmentsInPeriod} SIP installment(s) kept accumulating units steadily.` : 'staying invested kept your long-term compounding intact.'}`,
+      answer: `Under Indian tax rules, Equity mutual fund gains held over 12 months are taxed at 12.5 percent after a generous 1.25 Lakh Rupee tax-free exemption every financial year, while gains under 12 months are taxed at 20 percent. Debt funds are taxed at your income slab rate — check your Tax Statement tab for exact lot-by-lot numbers!`,
+      mood: 'POINTING',
+      engineUsed: 'TANASHVI_VERIFIED_ENGINE'
+    };
+  }
+
+  // 3. What is XIRR?
+  if (qLower.includes('xirr')) {
+    return {
+      answer: `Think of XIRR as your true annual interest rate — just like a bank fixed deposit rate, except it fairly accounts for every date you added or withdrew money via SIPs and lumpsums. Your overall portfolio XIRR is ${snap.portfolioXirr.toFixed(2)} percent per year!`,
       mood: 'HAPPY',
       engineUsed: 'TANASHVI_VERIFIED_ENGINE'
     };
   }
 
+  // 4. Market Crash / Volatility Resilience
+  if (qLower.includes('crash') || qLower.includes('tomorrow') || qLower.includes('panic')) {
+    return {
+      answer: `Stay calm, ${snap.firstName}! You hold ${(100 - snap.assetAllocation.equityPct).toFixed(1)} percent in safer Debt and Liquid stability assets to cushion shocks, and ongoing SIPs automatically buy extra units at lower prices during market falls. Historically, patient Indian equity investors who stayed invested recovered and compounded strongly.`,
+      mood: 'REASSURING',
+      engineUsed: 'TANASHVI_VERIFIED_ENGINE'
+    };
+  }
+
+  // 5. Top Performer / Best Earning Fund
+  if (qLower.includes('most') || qLower.includes('best') || qLower.includes('top') || qLower.includes('highest') || qLower.includes('earned')) {
+    return {
+      answer: `Your star performer between ${formatNiceDate(snap.startDate)} and ${formatNiceDate(snap.endDate)} was ${snap.topMover.name}, moving ${snap.topMover.periodPct >= 0 ? 'up' : 'down'} ${Math.abs(snap.topMover.periodPct).toFixed(2)} percent and contributing ${formatInrCompact(snap.topMover.contributionInr)}, followed by ${snap.secondaryMover.name}.`,
+      mood: 'CELEBRATING',
+      engineUsed: 'TANASHVI_VERIFIED_ENGINE'
+    };
+  }
+
+  // 6. Lagging / Slowest Fund
+  if (qLower.includes('lag') || qLower.includes('worst') || qLower.includes('slow') || qLower.includes('bottom')) {
+    const slowest = snap.schemeBars[snap.schemeBars.length - 1];
+    const isStability = slowest && /debt|liquid|bond/i.test(`${slowest.shortName} ${slowest.category}`);
+    return {
+      answer: slowest
+        ? `The slowest mover in this window was ${slowest.shortName} at ${slowest.periodPct >= 0 ? '+' : ''}${slowest.periodPct.toFixed(2)} percent. ${isStability ? 'That is completely expected — it is a Debt or Liquid stability fund designed to protect capital rather than chase rapid equity gains!' : 'Short-term underperformance in an equity fund is normal; review 3-to-5 year rolling performance with your advisor before judging it.'}`
+        : `All schemes in your portfolio moved steadily over this period without any sharp laggard.`,
+      mood: 'THINKING',
+      engineUsed: 'TANASHVI_VERIFIED_ENGINE'
+    };
+  }
+
+  // 7. Diversification & Overlap
+  if (qLower.includes('overlap') || qLower.includes('diversif')) {
+    return {
+      answer: `Your portfolio scores ${snap.diversification.diversificationScore} out of 100 on diversification, with ${snap.diversification.uniqueExposurePct} percent unique non-overlapping exposure and ${snap.diversification.weightedOverlapPct} percent overlap across roughly ${snap.diversification.estimatedUniqueStocks} underlying securities. ${snap.diversification.verdict}`,
+      mood: 'POINTING',
+      engineUsed: 'TANASHVI_VERIFIED_ENGINE'
+    };
+  }
+
+  // 8. Risk & Asset Balance
+  if (qLower.includes('risk') || qLower.includes('safe') || qLower.includes('balance') || qLower.includes('equity')) {
+    return {
+      answer: `Currently ${snap.assetAllocation.equityPct.toFixed(1)} percent of your money is in Equity (ideal for goals 5+ years away) and ${(100 - snap.assetAllocation.equityPct).toFixed(1)} percent sits in Debt, Hybrid, or Liquid stability. If you need cash within 1 to 3 years, speak with ${snap.advisorName} to ensure enough sits in low-volatility funds.`,
+      mood: 'POINTING',
+      engineUsed: 'TANASHVI_VERIFIED_ENGINE'
+    };
+  }
+
+  // 9. SIPs & Market Dips
+  if (qLower.includes('sip') || qLower.includes('dip') || qLower.includes('fall')) {
+    return {
+      answer: `During market dips, your regular SIP buys more mutual fund units at a lower price through rupee-cost averaging. Between ${formatNiceDate(snap.startDate)} and ${formatNiceDate(snap.endDate)}, ${snap.sipInstallmentsInPeriod > 0 ? `${snap.sipInstallmentsInPeriod} SIP installment(s) worth ${formatInrCompact(snap.sipTotalAddedInr)} kept accumulating units steadily.` : 'staying invested kept your long-term compounding intact.'}`,
+      mood: 'HAPPY',
+      engineUsed: 'TANASHVI_VERIFIED_ENGINE'
+    };
+  }
+
+  // 10. Market / Nifty Benchmark Comparison
   if (qLower.includes('nifty') || qLower.includes('market') || qLower.includes('benchmark') || qLower.includes('beat')) {
     return {
-      answer: `Between ${formatNiceDate(snap.startDate)} and ${formatNiceDate(snap.endDate)}, ${snap.benchmarkName} moved ${snap.benchmarkPeriodPct.toFixed(2)} percent including reinvested dividends, while your portfolio moved ${snap.deltaPct.toFixed(2)} percent — a spread of ${snap.alphaPeriodPct >= 0 ? 'plus' : 'minus'} ${Math.abs(snap.alphaPeriodPct).toFixed(2)} percent.`,
+      answer: `Between ${formatNiceDate(snap.startDate)} and ${formatNiceDate(snap.endDate)}, ${snap.benchmarkName} moved ${snap.benchmarkPeriodPct.toFixed(2)} percent including reinvested dividends, while your portfolio moved ${snap.deltaPct.toFixed(2)} percent — putting you ${snap.alphaPeriodPct >= 0 ? 'ahead by' : 'behind by'} ${Math.abs(snap.alphaPeriodPct).toFixed(2)} percent.`,
       mood: snap.outperformingMarket ? 'CELEBRATING' : 'THINKING',
       engineUsed: 'TANASHVI_VERIFIED_ENGINE'
     };
@@ -626,7 +701,10 @@ export function selectIndianEnglishVoice(preferredVoiceURI?: string): {
   return { voice: cleanEnglish, label: `${cleanEnglish.name} (${cleanEnglish.lang})` };
 }
 
+let activeSpeechToken = 0;
+
 export function stopTanuSpeech(): void {
+  activeSpeechToken++;
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
@@ -634,11 +712,18 @@ export function stopTanuSpeech(): void {
 
 export function speakTanuDialogue(
   text: string,
-  callbacks?: { onStart?: () => void; onEnd?: () => void; preferredVoiceURI?: string }
+  callbacks?: {
+    onStart?: () => void;
+    onComplete?: () => void; // Fires ONLY when speech completes naturally (never on cancel/interrupted!)
+    onStop?: () => void;     // Fires on natural end OR cancel/error (to stop speaking animation)
+    preferredVoiceURI?: string;
+  }
 ): string {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     return 'Speech Unsupported';
   }
+  activeSpeechToken++;
+  const myToken = activeSpeechToken;
   window.speechSynthesis.cancel();
 
   const { voice, label } = selectIndianEnglishVoice(callbacks?.preferredVoiceURI);
@@ -669,9 +754,23 @@ export function speakTanuDialogue(
   utterance.pitch = 1.04;
   utterance.volume = 1.0;
 
-  utterance.onstart = () => callbacks?.onStart?.();
-  utterance.onend = () => callbacks?.onEnd?.();
-  utterance.onerror = () => callbacks?.onEnd?.();
+  utterance.onstart = () => {
+    if (myToken === activeSpeechToken) {
+      callbacks?.onStart?.();
+    }
+  };
+  utterance.onend = () => {
+    if (myToken === activeSpeechToken) {
+      callbacks?.onStop?.();
+      callbacks?.onComplete?.();
+    }
+  };
+  utterance.onerror = () => {
+    // NEVER call onComplete on cancel/interrupted error — prevents auto-play slide skipping!
+    if (myToken === activeSpeechToken) {
+      callbacks?.onStop?.();
+    }
+  };
 
   window.speechSynthesis.speak(utterance);
   return label;
