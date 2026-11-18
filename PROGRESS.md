@@ -353,7 +353,7 @@
   * Built reusable [`PortfolioChartsAndBenchmark.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/PortfolioChartsAndBenchmark.tsx) & [`benchmarkData.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/utils/benchmarkData.ts) featuring:
     * Interactive dual-series SVG Portfolio vs. Benchmark curve (`₹ Wealth Growth` & `Base 100` toggle) with live mouse-hover crosshair tooltips across `6M`, `1Y`, `3Y`, `5Y`, `ALL`.
     * Alpha Scorecard: Portfolio vs. Benchmark XIRR, Net Alpha, Extra Wealth Generated (`₹`), Max Drawdown, Beta, and Up/Down Capture Ratios.
-    * Interactive SVG Donut Charts (Asset Allocation + Market-Cap Distribution), Scheme-wise Invested vs. Current Value Bars, and Sector Exposure Bars.
+    * Interactive SVG Donut Charts (Asset Allocation + Market-Cap Distribution), **Portfolio Diversification & Fund Overlap Tracker** (0–100 score ring, Unique vs. Overlapping Exposure stacked bar, estimated unique securities, and pairwise fund overlap breakdown with common stocks), Scheme-wise Invested vs. Current Value Bars, and Sector Exposure Bars.
     * Built-in **Benchmark TRI Data Freshness & Update Center** (one-click Live AMFI TRI Sync, NSE/BSE CSV file upload, and Manual EOD TRI entry with `localStorage` persistence) + branded PDF & Excel (.xls) exports.
   * Deployed across **ALL 4 User Levels**:
     * **Category 3 (End Investor):** `Charts & Benchmark` tab inside `InvestorPortalView.tsx`.
@@ -368,9 +368,10 @@
 * **Zero-Hallucination AI Story Engine ([`tanuStoryEngine.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/utils/tanuStoryEngine.ts)):**
   * **Deterministic Math Split:** Computes exact period returns, ₹ delta, SIP count, top/secondary fund drivers, benchmark TRI period return, and mini chart curves between any two dates (defaulting to the investor's **Last Login Date $\rightarrow$ Today**, persisted per UCC).
   * **Optional Gemini 2.5 Flash Enhancement (`@google/genai`):** Receives strictly anonymized non-PII facts to craft warm Indian-English narration & answer investor follow-up questions, with instant deterministic offline fallback.
-  * **Indian English Voice Narration (`en-IN`) + Live Subtitles:** Uses Web Speech API selecting `en-IN` voices with Sound On/Off toggle and always-visible teleprompter subtitles.
-* **5-Scene Animated Stage ([`TanuStoryWalkthroughModal.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/TanuStoryWalkthroughModal.tsx)):**
-  * Tanu walks smoothly across the stage (`motion/react` spring physics) and pulls out animated chart cards: Period Wealth Delta, Top Movers & SIP Activity, Animated Mini Benchmark Line Chart, Animated Allocation Donut, and Interactive "Ask Tanu" Q&A + Human MFD Advisor Callback.
+  * **Strict Pure Indian-English Voice (`en-IN`) + Live Subtitles:** Strictly filters Web Speech voices to `en-*` only (blocking regional `bn-IN`/`hi-IN` leakage), matches `utterance.lang` to the chosen English voice, provides an optional pure-English voice selector, and displays always-visible live subtitles.
+* **5-Slide Graphical Presentation Stage & Bottom Presenter Runway ([`TanuStoryWalkthroughModal.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/TanuStoryWalkthroughModal.tsx)):**
+  * Every slide presents full-width animated visual graphs/charts: (1) Portfolio Growth Area Graph, (2) Scheme-Wise Return Bar Chart + SIP Activity, (3) Dual-Line Benchmark Comparison Graph, (4) Asset Allocation Donut + Fund Diversification/Overlap Gauge, and (5) 5-Year Compounding Bar Graph + Interactive "Ask Tanu" Q&A.
+  * Tanu walks smoothly across the bottom presenter runway below the slide deck (`10% -> 30% -> 50% -> 70% -> 84%`), pointing upward toward each visual chart slide like a live stage presenter.
   * Permanent **AI & SEBI Regulatory Caveat Banner** (educational/informational only; never autonomous buy/sell recommendations).
 * **Deployed For Both Investors & MFDs:**
   * **End Investor Portal (`InvestorPortalView.tsx`):** Floating animated Tanu Owl launcher in bottom-right corner + top banner `Ask Tanu (Owl Story)` CTA.

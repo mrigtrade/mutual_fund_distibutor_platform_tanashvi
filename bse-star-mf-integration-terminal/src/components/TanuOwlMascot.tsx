@@ -13,7 +13,7 @@ interface TanuOwlMascotProps {
   mood: TanuMood;
   isSpeaking?: boolean;
   isWalking?: boolean;
-  pointDirection?: 'left' | 'right';
+  pointDirection?: 'left' | 'right' | 'up';
   size?: number;
 }
 
@@ -172,7 +172,7 @@ export const TanuOwlMascot: React.FC<TanuOwlMascotProps> = ({
           transition={{ duration: isJoyful ? 0.6 : 2.2, repeat: isJoyful ? Infinity : isPointing ? 0 : Infinity }}
         />
 
-        {/* Right Wing (Waves or Points Right!) */}
+        {/* Right Wing (Waves, Points Sideways, or Points Upward at Slide!) */}
         <motion.path
           d="M138 86 C160 96, 162 128, 142 142 C132 148, 128 132, 130 112 Z"
           fill="url(#tanuBodyGrad)"
@@ -184,13 +184,15 @@ export const TanuOwlMascot: React.FC<TanuOwlMascotProps> = ({
               ? { rotate: [-42, -68, -36, -65, -42] }
               : isJoyful
               ? { rotate: [-25, -45, -25] }
+              : isPointing && pointDirection === 'up'
+              ? { rotate: [-96, -108, -96] }
               : isPointing && pointDirection === 'right'
               ? { rotate: -55 }
               : isThinking
               ? { rotate: -28 }
               : { rotate: [0, -5, 0] }
           }
-          transition={{ duration: isWaving ? 1.1 : isJoyful ? 0.6 : 2.2, repeat: isPointing || isThinking ? 0 : Infinity }}
+          transition={{ duration: isWaving ? 1.1 : isJoyful ? 0.6 : 1.8, repeat: isPointing && pointDirection !== 'up' || isThinking ? 0 : Infinity }}
         />
 
         {/* Cute Ear Tufts with Gold Tips */}

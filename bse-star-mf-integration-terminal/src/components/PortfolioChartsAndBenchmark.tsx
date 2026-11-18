@@ -29,7 +29,8 @@ import {
   BarChart3,
   Activity,
   PlusCircle,
-  X
+  X,
+  GitCompare
 } from 'lucide-react';
 import {
   BENCHMARK_DEFINITIONS,
@@ -38,6 +39,7 @@ import {
   HorizonKey,
   StandardBenchmarkId,
   computePortfolioComparison,
+  computePortfolioDiversification,
   formatInrCompact,
   importBenchmarkCsvClient,
   loadBenchmarkStore,
@@ -244,6 +246,12 @@ export const PortfolioChartsAndBenchmark: React.FC<PortfolioChartsAndBenchmarkPr
         assetAllocation
       }),
     [store, selectedBenchmark, horizon, totalInvested, currentValue, portfolioXirr, assetAllocation]
+  );
+
+  // Compute Portfolio Diversification & Mutual Fund Overlap Analysis
+  const diversification = useMemo(
+    () => computePortfolioDiversification(holdings, assetAllocation),
+    [holdings, assetAllocation]
   );
 
   // Auto-derive market cap split if not explicitly passed
@@ -1028,6 +1036,153 @@ export const PortfolioChartsAndBenchmark: React.FC<PortfolioChartsAndBenchmarkPr
           slices={mcapSlices}
           totalValueInr={currentValue}
         />
+      </div>
+
+      {/* Portfolio Diversification & Mutual Fund Overlap Tracker */}
+      <div className="bg-[#0b1322] border border-slate-800 rounded-2xl p-5 space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h4 className="text-base font-serif text-white font-semibold flex items-center gap-2">
+              <GitCompare className="w-4 h-4 text-[#c5a059]" />
+              Portfolio Diversification & Fund Overlap Tracker
+            </h4>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Measures true uniqueness vs. underlying stock duplication across your mutual fund combination.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                diversification.diversificationScore >= 80
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
+                  : diversification.diversificationScore >= 65
+                  ? 'bg-[#c5a059]/15 text-[#c5a059] border-[#c5a059]/40'
+                  : 'bg-amber-500/15 text-amber-300 border-amber-500/35'
+              }`}
+            >
+              Score: {diversification.diversificationScore}/100 · {diversification.rating}
+            </span>
+          </div>
+        </div>
+
+        {/* Gauge + Uniqueness vs Overlap Summary */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
+          {/* Circular Diversification Score Ring */}
+          <div className="bg-[#070d19] border border-slate-800/80 rounded-xl p-4 flex items-center gap-4">
+            <div className="relative w-20 h-20 shrink-0 flex items-center justify-center">
+              <svg viewBox="0 0 100 100" className="w-20 h-20 -rotate-90">
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#1e293b" strokeWidth="10" />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="38"
+                  fill="none"
+                  stroke={diversification.diversificationScore >= 75 ? '#34d399' : '#c5a059'}
+                  strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(diversification.diversificationScore / 100) * 238.76} 238.76`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-lg font-mono font-bold text-white">{diversification.diversificationScore}</span>
+                <span className="text-[9px] text-slate-400 uppercase">/ 100</span>
+              </div>
+            </div>
+            <div className="space-y-1 text-xs">
+              <div className="font-semibold text-white">{diversification.rating}</div>
+              <div className="text-[11px] text-slate-400">
+                ~<strong className="text-slate-200">{diversification.estimatedUniqueStocks}</strong> unique underlying securities across <strong className="text-slate-200">{diversification.assetClassesCount}</strong> asset classes
+              </div>
+            </div>
+          </div>
+
+          {/* Unique vs. Overlapping Stacked Visual Bar */}
+          <div className="lg:col-span-2 bg-[#070d19] border border-slate-800/80 rounded-xl p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                Unique / Non-Overlapping Exposure: <strong className="font-mono">{diversification.uniqueExposurePct}%</strong>
+              </span>
+              <span className="text-amber-400 font-semibold flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                Overlapping Exposure: <strong className="font-mono">{diversification.weightedOverlapPct}%</strong>
+              </span>
+            </div>
+
+            <div className="w-full h-3.5 bg-slate-900 rounded-full overflow-hidden flex border border-slate-800">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-[#c5a059] transition-all duration-500"
+                style={{ width: `${diversification.uniqueExposurePct}%` }}
+                title={`Unique Exposure: ${diversification.uniqueExposurePct}%`}
+              />
+              <div
+                className="h-full bg-amber-500/90 transition-all duration-500"
+                style={{ width: `${diversification.weightedOverlapPct}%` }}
+                title={`Overlapping Holdings: ${diversification.weightedOverlapPct}%`}
+              />
+            </div>
+
+            <p className="text-[11px] text-slate-300 leading-relaxed">{diversification.verdict}</p>
+          </div>
+        </div>
+
+        {/* Pairwise Scheme Overlap Matrix */}
+        {diversification.pairs.length > 0 && (
+          <div className="space-y-2.5">
+            <div className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+              Fund-to-Fund Overlap Breakdown ({diversification.pairs.length} Combinations Checked)
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {diversification.pairs.slice(0, 6).map(pair => (
+                <div
+                  key={`${pair.fundA}-${pair.fundB}`}
+                  className="bg-[#070d19] border border-slate-800/80 rounded-xl p-3.5 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2 text-xs">
+                    <div className="font-medium text-slate-200 leading-snug">
+                      {pair.fundA} <span className="text-[#c5a059] font-bold">↔</span> {pair.fundB}
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold shrink-0 ${
+                        pair.severity === 'HIGH'
+                          ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
+                          : pair.severity === 'MODERATE'
+                          ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                          : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                      }`}
+                    >
+                      {pair.overlapPct}% Overlap
+                    </span>
+                  </div>
+
+                  {/* Pair Overlap vs Unique Bar */}
+                  <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden flex">
+                    <div
+                      className={
+                        pair.severity === 'HIGH'
+                          ? 'bg-rose-500 h-full'
+                          : pair.severity === 'MODERATE'
+                          ? 'bg-amber-400 h-full'
+                          : 'bg-emerald-400 h-full'
+                      }
+                      style={{ width: `${Math.max(pair.overlapPct > 0 ? 4 : 0, pair.overlapPct)}%` }}
+                    />
+                    <div className="bg-slate-800 h-full flex-1" />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span className="truncate pr-2">
+                      {pair.sharedStocks.length > 0
+                        ? `Common: ${pair.sharedStocks.join(', ')}`
+                        : 'Zero stock overlap (Cross-asset diversification)'}
+                    </span>
+                    <span className="font-mono text-emerald-400 shrink-0">{pair.uniquePct}% Unique</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Scheme-wise Invested vs. Current Value Bar Chart + Sector Exposure Chart */}

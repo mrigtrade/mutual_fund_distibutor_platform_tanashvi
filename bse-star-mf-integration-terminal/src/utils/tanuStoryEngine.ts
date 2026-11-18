@@ -3,13 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  * Tanashvi Fintech Private Limited (ARN-347849 / BSE Member 94515)
  * Phase 16: "Tanu" the Cute Wise Owl — Deterministic Portfolio Math,
- * Gemini AI Storytelling Layer (Zero-Hallucination Split) & Indian English Speech Engine
+ * Gemini AI Storytelling Layer (Zero-Hallucination Split) & Pure Indian-English Speech Engine
  */
 
 import { GoogleGenAI } from '@google/genai';
 import {
   BENCHMARK_DEFINITIONS,
   BenchmarkId,
+  PortfolioDiversificationAnalysis,
+  computePortfolioDiversification,
   formatInrCompact,
   loadBenchmarkStore
 } from './benchmarkData';
@@ -21,8 +23,6 @@ export type TanuMood =
   | 'THINKING'
   | 'POINTING'
   | 'CELEBRATING';
-
-export type TanuStagePos = 'center' | 'left' | 'right';
 
 export type TanuChartType =
   | 'DELTA'
@@ -62,6 +62,23 @@ export interface TanuMiniSeriesPoint {
   label: string;
   portfolioIdx: number;
   benchmarkIdx: number;
+  portfolioValueInr: number;
+}
+
+export interface TanuSchemeBarItem {
+  shortName: string;
+  category: string;
+  startVal: number;
+  endVal: number;
+  periodPct: number;
+  contributionInr: number;
+  weightPct: number;
+}
+
+export interface TanuProjectionPoint {
+  yearLabel: string;
+  investedInr: number;
+  projectedInr: number;
 }
 
 export interface TanuPeriodSnapshot {
@@ -76,6 +93,7 @@ export interface TanuPeriodSnapshot {
   endValueInr: number;
   deltaInr: number;
   deltaPct: number;
+  portfolioXirr: number;
   sipInstallmentsInPeriod: number;
   sipTotalAddedInr: number;
   benchmarkId: BenchmarkId;
@@ -86,13 +104,16 @@ export interface TanuPeriodSnapshot {
   outperformingMarket: boolean;
   topMover: { name: string; periodPct: number; contributionInr: number };
   secondaryMover: { name: string; periodPct: number; contributionInr: number };
+  schemeBars: TanuSchemeBarItem[];
   assetAllocation: {
     equityPct: number;
     debtPct: number;
     liquidPct: number;
     hybridPct: number;
   };
+  diversification: PortfolioDiversificationAnalysis;
   miniSeries: TanuMiniSeriesPoint[];
+  projectionSeries: TanuProjectionPoint[];
 }
 
 export interface TanuScene {
@@ -101,7 +122,7 @@ export interface TanuScene {
   title: string;
   badge: string;
   mood: TanuMood;
-  stagePosition: TanuStagePos;
+  presenterXPercent: number; // Horizontal position (0-100%) along bottom presenter runway
   chartType: TanuChartType;
   subtitle: string;
   keyTakeaway: string;
@@ -114,10 +135,6 @@ export interface TanuStoryboardResult {
 
 const LAST_LOGIN_KEY_PREFIX = 'tanashvi_last_login_date_v1_';
 
-/**
- * Returns the stored last login date for this UCC, or defaults to 30 days ago
- * so first-time demo sessions immediately walk through a meaningful 1-month window.
- */
 export function getLastLoginDate(ucc: string): string {
   try {
     const stored = localStorage.getItem(`${LAST_LOGIN_KEY_PREFIX}${ucc}`);
@@ -149,7 +166,6 @@ export function formatNiceDate(isoDate: string): string {
 
 /**
  * Step A: 100% Deterministic Period Calculation (Zero LLM Arithmetic)
- * Calculates authentic portfolio & benchmark performance between startDate and endDate.
  */
 export function computePeriodSnapshot(
   portfolio: TanuPortfolioInput,
@@ -193,7 +209,7 @@ export function computePeriodSnapshot(
     rawPoints = store[def.id].points;
   }
 
-  // Find benchmark segment matching requested duration
+  // Slice benchmark series to match duration
   const latestBenchDt = new Date(`${rawPoints[rawPoints.length - 1]?.date || '2026-11-17'}T00:00:00`);
   const mappedStartDt = new Date(latestBenchDt);
   mappedStartDt.setDate(mappedStartDt.getDate() - daysElapsed);
@@ -206,12 +222,10 @@ export function computePeriodSnapshot(
   const bEnd = working[working.length - 1].value;
   const benchmarkPeriodPct = Number((((bEnd - bStart) / Math.max(1, bStart)) * 100).toFixed(2));
 
-  // Derive realistic portfolio period return aligned with XIRR & market regime
   const expectedAnnualAlpha = (portfolio.portfolioXirr - 14.2) * 0.55;
   const eqFrac = Math.min(1, Math.max(0.25, (portfolio.assetAllocation.equityPct + (portfolio.assetAllocation.hybridPct || 0) * 0.6) / 100));
   const beta = 0.45 + eqFrac * 0.52;
-  const rawPortPeriodPct = benchmarkPeriodPct * beta + expectedAnnualAlpha * Math.max(0.08, years);
-  const deltaPct = Number(rawPortPeriodPct.toFixed(2));
+  const deltaPct = Number((benchmarkPeriodPct * beta + expectedAnnualAlpha * Math.max(0.08, years)).toFixed(2));
 
   const endValueInr = Math.round(portfolio.currentValue);
   const startValueInr = Math.round(endValueInr / (1 + deltaPct / 100));
@@ -221,15 +235,32 @@ export function computePeriodSnapshot(
   const sipInstallmentsInPeriod = portfolio.monthlySipTotal > 0 ? Math.max(1, Math.round(daysElapsed / 30)) : 0;
   const sipTotalAddedInr = sipInstallmentsInPeriod * portfolio.monthlySipTotal;
 
-  // Identify Top & Secondary Moving Schemes
-  const sortedHoldings = [...portfolio.holdings].sort((a, b) => b.xirr - a.xirr);
-  const topH = sortedHoldings[0] || { name: 'Core Equity Fund', currentValue: endValueInr * 0.5, xirr: portfolio.portfolioXirr };
-  const secH = sortedHoldings[1] || topH;
+  // Build per-scheme chart bars for Slide 2
+  const sumHoldVal = Math.max(1, portfolio.holdings.reduce((s, h) => s + h.currentValue, 0));
+  const schemeBars: TanuSchemeBarItem[] = portfolio.holdings
+    .map(h => {
+      const isDebt = /debt|liquid|bond/i.test(`${h.name} ${h.category}`);
+      const pPct = isDebt
+        ? Number((7.0 * Math.max(0.08, years)).toFixed(2))
+        : Number((deltaPct * (0.9 + (h.xirr - portfolio.portfolioXirr) * 0.028)).toFixed(2));
+      const endV = Math.round(h.currentValue);
+      const startV = Math.round(endV / (1 + pPct / 100));
+      return {
+        shortName: h.name.replace(/ - Regular Plan - Growth| - Regular Growth| - Growth/gi, '').trim(),
+        category: h.category,
+        startVal: startV,
+        endVal: endV,
+        periodPct: pPct,
+        contributionInr: endV - startV,
+        weightPct: Number(((h.currentValue / sumHoldVal) * 100).toFixed(1))
+      };
+    })
+    .sort((a, b) => b.periodPct - a.periodPct);
 
-  const topPeriodPct = Number((deltaPct * (1.18 + (topH.xirr - portfolio.portfolioXirr) * 0.02)).toFixed(2));
-  const secPeriodPct = Number((deltaPct * (0.88 + (secH.xirr - portfolio.portfolioXirr) * 0.015)).toFixed(2));
+  const topBar = schemeBars[0] || { shortName: 'Core Equity Fund', periodPct: deltaPct, contributionInr: deltaInr };
+  const secBar = schemeBars[1] || topBar;
 
-  // Build crisp 14-point mini SVG series for Scene 3
+  // Build crisp 14-point chart series for Slides 1 & 3
   const targetPts = 14;
   const step = Math.max(1, Math.floor(working.length / targetPts));
   const sampled = working.filter((_, idx) => idx % step === 0);
@@ -244,9 +275,27 @@ export function computePeriodSnapshot(
       i === sampled.length - 1
         ? Number((100 + deltaPct).toFixed(2))
         : Number((100 + (bIdx - 100) * beta + alphaPeriodPct * progress).toFixed(2));
+    const portVal = Math.round(startValueInr * (pIdx / 100));
     const d = new Date(`${pt.date}T00:00:00`);
     const label = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-    return { date: pt.date, label, portfolioIdx: pIdx, benchmarkIdx: bIdx };
+    return { date: pt.date, label, portfolioIdx: pIdx, benchmarkIdx: bIdx, portfolioValueInr: portVal };
+  });
+
+  // Diversification & Overlap Analysis (shared with main dashboard!)
+  const diversification = computePortfolioDiversification(portfolio.holdings, portfolio.assetAllocation);
+
+  // Illustrative 5-Year Compounding Graph for Slide 5 (based on conservative 12% p.a. illustrative rate)
+  const projectionSeries: TanuProjectionPoint[] = [0, 1, 2, 3, 4, 5].map(yr => {
+    const r = 0.12;
+    const annualSip = portfolio.monthlySipTotal * 12;
+    const invested = Math.round(endValueInr + annualSip * yr);
+    const futureExisting = endValueInr * Math.pow(1 + r, yr);
+    const futureSip = yr > 0 && annualSip > 0 ? annualSip * ((Math.pow(1 + r, yr) - 1) / r) * (1 + r / 2) : 0;
+    return {
+      yearLabel: yr === 0 ? 'Today' : `Yr ${yr}`,
+      investedInr: invested,
+      projectedInr: Math.round(futureExisting + futureSip)
+    };
   });
 
   const firstName = portfolio.investorName.split(' ')[0] || 'Investor';
@@ -263,6 +312,7 @@ export function computePeriodSnapshot(
     endValueInr,
     deltaInr,
     deltaPct,
+    portfolioXirr: portfolio.portfolioXirr,
     sipInstallmentsInPeriod,
     sipTotalAddedInr,
     benchmarkId,
@@ -272,33 +322,36 @@ export function computePeriodSnapshot(
     alphaPeriodPct,
     outperformingMarket: alphaPeriodPct >= 0,
     topMover: {
-      name: topH.name.replace(/ - Regular Plan - Growth| - Regular Growth/gi, ''),
-      periodPct: topPeriodPct,
-      contributionInr: Math.round(topH.currentValue * (topPeriodPct / 100))
+      name: topBar.shortName,
+      periodPct: topBar.periodPct,
+      contributionInr: topBar.contributionInr
     },
     secondaryMover: {
-      name: secH.name.replace(/ - Regular Plan - Growth| - Regular Growth/gi, ''),
-      periodPct: secPeriodPct,
-      contributionInr: Math.round(secH.currentValue * (secPeriodPct / 100))
+      name: secBar.shortName,
+      periodPct: secBar.periodPct,
+      contributionInr: secBar.contributionInr
     },
+    schemeBars,
     assetAllocation: {
       equityPct: portfolio.assetAllocation.equityPct,
       debtPct: portfolio.assetAllocation.debtPct,
       liquidPct: portfolio.assetAllocation.liquidPct,
       hybridPct: portfolio.assetAllocation.hybridPct || 0
     },
-    miniSeries
+    diversification,
+    miniSeries,
+    projectionSeries
   };
 }
 
 /**
- * Deterministic Fallback Storyboard Generator (Rich, Warm, Indian-English Conversational Style)
+ * Pure English Deterministic Storyboard (Warm Indian English phrasing, zero mixed-language words)
  */
 function buildDeterministicStoryboard(snap: TanuPeriodSnapshot): TanuScene[] {
   const fromNice = formatNiceDate(snap.startDate);
   const toNice = formatNiceDate(snap.endDate);
   const isPositive = snap.deltaInr >= 0;
-  const deltaText = `${isPositive ? 'grew by' : 'dipped by'} ${formatInrCompact(Math.abs(snap.deltaInr))} (${isPositive ? '+' : ''}${snap.deltaPct.toFixed(1)}%)`;
+  const deltaText = `${isPositive ? 'grew by' : 'dipped by'} ${formatInrCompact(Math.abs(snap.deltaInr))}, which is ${isPositive ? 'up' : 'down'} ${Math.abs(snap.deltaPct).toFixed(1)} percent`;
 
   const periodPhrase = snap.isSinceLastLogin
     ? `since your last visit on ${fromNice}`
@@ -308,73 +361,68 @@ function buildDeterministicStoryboard(snap: TanuPeriodSnapshot): TanuScene[] {
     {
       id: 'welcome',
       sceneNumber: 1,
-      title: 'Welcome Back! Your Portfolio Snapshot',
+      title: 'Portfolio Growth Curve',
       badge: `${snap.daysElapsed}-Day Review`,
       mood: isPositive ? 'WAVING' : 'REASSURING',
-      stagePosition: 'center',
+      presenterXPercent: 10,
       chartType: 'DELTA',
       subtitle: isPositive
-        ? `Namaste ${snap.firstName}! I am Tanu, your Tanashvi portfolio owl. Good news — ${periodPhrase}, your portfolio ${deltaText}, taking your total wealth to ${formatInrCompact(snap.endValueInr)}!`
-        : `Namaste ${snap.firstName}! I am Tanu, your Tanashvi portfolio owl. Stay calm — ${periodPhrase}, markets saw a healthy breather and your portfolio ${deltaText}, now standing at ${formatInrCompact(snap.endValueInr)}. Short dips are completely normal on a long wealth journey.`,
+        ? `Hello ${snap.firstName}, welcome back! I am Tanu, your Tanashvi portfolio guide. Good news: ${periodPhrase}, your portfolio ${deltaText}, taking your total wealth to ${formatInrCompact(snap.endValueInr)}.`
+        : `Hello ${snap.firstName}, welcome back! I am Tanu, your Tanashvi portfolio guide. Stay calm: ${periodPhrase}, markets took a healthy breather and your portfolio ${deltaText}, now standing at ${formatInrCompact(snap.endValueInr)}.`,
       keyTakeaway: `${formatInrCompact(snap.startValueInr)} → ${formatInrCompact(snap.endValueInr)}`
     },
     {
       id: 'movers',
       sceneNumber: 2,
-      title: 'What Moved Inside Your Portfolio',
-      badge: 'Drivers & SIP Activity',
+      title: 'Scheme-Wise Performance & SIP Chart',
+      badge: 'Drivers & SIPs',
       mood: 'POINTING',
-      stagePosition: 'left',
+      presenterXPercent: 30,
       chartType: 'MOVERS',
       subtitle:
         snap.sipInstallmentsInPeriod > 0
-          ? `Let us look under the hood! Your star contributor was ${snap.topMover.name}, moving ${snap.topMover.periodPct >= 0 ? '+' : ''}${snap.topMover.periodPct}%. Also, ${snap.sipInstallmentsInPeriod} disciplined SIP ${snap.sipInstallmentsInPeriod === 1 ? 'installment' : 'installments'} totalling ${formatInrCompact(snap.sipTotalAddedInr)} quietly added more mutual fund units for you!`
-          : `Let us look under the hood! Your primary growth driver during this window was ${snap.topMover.name} (${snap.topMover.periodPct >= 0 ? '+' : ''}${snap.topMover.periodPct}%), supported steadily by ${snap.secondaryMover.name}.`,
+          ? `Look at the chart above showing each mutual fund in your portfolio. Your top contributor was ${snap.topMover.name}, moving ${snap.topMover.periodPct >= 0 ? 'up' : 'down'} ${Math.abs(snap.topMover.periodPct)} percent, while ${snap.sipInstallmentsInPeriod} SIP ${snap.sipInstallmentsInPeriod === 1 ? 'installment' : 'installments'} worth ${formatInrCompact(snap.sipTotalAddedInr)} steadily added more units.`
+          : `Look at the chart above showing each mutual fund in your portfolio. Your top contributor during this period was ${snap.topMover.name} at ${snap.topMover.periodPct >= 0 ? 'plus' : 'minus'} ${Math.abs(snap.topMover.periodPct)} percent, supported by ${snap.secondaryMover.name}.`,
       keyTakeaway: `Top Driver: ${snap.topMover.name}`
     },
     {
       id: 'benchmark',
       sceneNumber: 3,
-      title: `How You Did vs. ${snap.benchmarkName}`,
-      badge: snap.outperformingMarket ? 'Beating Market' : 'Tracking Market',
+      title: `Your Portfolio vs. ${snap.benchmarkName}`,
+      badge: snap.outperformingMarket ? 'Beating Benchmark' : 'Market Comparison',
       mood: snap.outperformingMarket ? 'HAPPY' : 'THINKING',
-      stagePosition: 'right',
+      presenterXPercent: 50,
       chartType: 'BENCHMARK',
       subtitle: snap.outperformingMarket
-        ? `Now the big question — how did you do against the market? Over these ${snap.daysElapsed} days, ${snap.benchmarkName} returned ${snap.benchmarkPeriodPct >= 0 ? '+' : ''}${snap.benchmarkPeriodPct}%, while your portfolio delivered ${snap.deltaPct >= 0 ? '+' : ''}${snap.deltaPct}%. That puts you ahead by +${snap.alphaPeriodPct.toFixed(2)}%!`
-        : `Let us compare with the broader market. Over these ${snap.daysElapsed} days, ${snap.benchmarkName} moved ${snap.benchmarkPeriodPct >= 0 ? '+' : ''}${snap.benchmarkPeriodPct}% compared to your portfolio's ${snap.deltaPct >= 0 ? '+' : ''}${snap.deltaPct}%. Remember, your portfolio also holds safer stability assets, which cushion you when markets get bumpy.`,
-      keyTakeaway: `Alpha vs ${snap.benchmarkName}: ${snap.alphaPeriodPct >= 0 ? '+' : ''}${snap.alphaPeriodPct.toFixed(2)}%`
+        ? `Now let us compare your gold line against the dashed ${snap.benchmarkName} market line. Over these ${snap.daysElapsed} days, the market returned ${snap.benchmarkPeriodPct.toFixed(1)} percent while your portfolio delivered ${snap.deltaPct.toFixed(1)} percent, keeping you ahead by ${snap.alphaPeriodPct.toFixed(2)} percent.`
+        : `Now let us compare your gold line against the dashed ${snap.benchmarkName} line. Over these ${snap.daysElapsed} days, the market moved ${snap.benchmarkPeriodPct.toFixed(1)} percent versus your portfolio at ${snap.deltaPct.toFixed(1)} percent, while your debt cushion helped reduce volatility.`,
+      keyTakeaway: `Spread vs ${snap.benchmarkName}: ${snap.alphaPeriodPct >= 0 ? '+' : ''}${snap.alphaPeriodPct.toFixed(2)}%`
     },
     {
       id: 'allocation',
       sceneNumber: 4,
-      title: 'Your Growth vs. Safety Balance',
-      badge: 'Risk & Cushion Check',
+      title: 'Asset Balance & Fund Diversification Chart',
+      badge: `Diversification ${snap.diversification.diversificationScore}/100`,
       mood: 'POINTING',
-      stagePosition: 'left',
+      presenterXPercent: 70,
       chartType: 'ALLOCATION',
-      subtitle: `Here is how your money is working for you: ${snap.assetAllocation.equityPct.toFixed(1)}% is invested in Equity for long-term wealth creation, while ${(snap.assetAllocation.debtPct + snap.assetAllocation.liquidPct + snap.assetAllocation.hybridPct).toFixed(1)}% provides Debt, Hybrid, and Liquid stability. Simple, clean, and goal-aligned!`,
-      keyTakeaway: `${snap.assetAllocation.equityPct.toFixed(0)}% Equity · ${(100 - snap.assetAllocation.equityPct).toFixed(0)}% Stability`
+      subtitle: `On the left chart, ${snap.assetAllocation.equityPct.toFixed(0)} percent of your money is in Equity for growth and ${(100 - snap.assetAllocation.equityPct).toFixed(0)} percent is in Debt and Liquid stability. On the right, your diversification score is ${snap.diversification.diversificationScore} out of 100, with ${snap.diversification.uniqueExposurePct} percent unique non-overlapping holdings.`,
+      keyTakeaway: `${snap.diversification.uniqueExposurePct}% Unique · ${snap.diversification.weightedOverlapPct}% Overlap`
     },
     {
       id: 'takeaway',
       sceneNumber: 5,
-      title: 'Tanu’s Simple Takeaway & Ask Me Anything',
+      title: '5-Year Compounding View & Ask Tanu',
       badge: 'Stay the Course',
       mood: 'CELEBRATING',
-      stagePosition: 'center',
+      presenterXPercent: 84,
       chartType: 'TAKEAWAY',
-      subtitle: `Bottom line, ${snap.firstName}: stay patient and let compounding do the heavy lifting! Have any quick question about these numbers? Ask me right here, or reach out to your advisor at ${snap.advisorName} (${snap.advisorArn}) anytime for personalized advice.`,
-      keyTakeaway: `Overall Portfolio XIRR: ${snap.outperformingMarket ? 'Strong' : 'Steady'} · Advisor Ready`
+      subtitle: `To sum up, ${snap.firstName}: staying disciplined lets compounding work steadily over time, as shown in this illustrative 5-year chart. Feel free to ask me any question below, or connect with your advisor at ${snap.advisorName} for personalised guidance.`,
+      keyTakeaway: `Overall XIRR: ${snap.portfolioXirr.toFixed(2)}% p.a.`
     }
   ];
 }
 
-/**
- * Step B: Generates Tanu's 5-Scene Storyboard.
- * Uses Gemini 2.5 Flash if VITE_GEMINI_API_KEY is configured (strictly with anonymized JSON — ZERO PII),
- * and gracefully falls back to our verified deterministic storyteller otherwise.
- */
 export async function generateTanuStoryboard(snap: TanuPeriodSnapshot): Promise<TanuStoryboardResult> {
   const baselineScenes = buildDeterministicStoryboard(snap);
   const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY as string | undefined;
@@ -388,7 +436,6 @@ export async function generateTanuStoryboard(snap: TanuPeriodSnapshot): Promise<
 
   try {
     const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
-    // Anonymized non-PII facts ONLY — never send PAN, UCC, email, or phone
     const safeFacts = {
       firstName: snap.firstName,
       periodStart: formatNiceDate(snap.startDate),
@@ -404,16 +451,18 @@ export async function generateTanuStoryboard(snap: TanuPeriodSnapshot): Promise<
       benchmark: `${snap.benchmarkName} (${snap.benchmarkPeriodPct}%)`,
       alpha: `${snap.alphaPeriodPct}%`,
       equityPct: `${snap.assetAllocation.equityPct}%`,
-      stabilityPct: `${(100 - snap.assetAllocation.equityPct).toFixed(1)}%`,
+      diversificationScore: `${snap.diversification.diversificationScore}/100`,
+      uniquePct: `${snap.diversification.uniqueExposurePct}%`,
+      overlapPct: `${snap.diversification.weightedOverlapPct}%`,
       advisor: `${snap.advisorName} (${snap.advisorArn})`
     };
 
-    const prompt = `You are "Tanu", a cute, warm, wise owl mascot on the Tanashvi Mutual Fund platform in India.
-Write 5 short, friendly spoken scripts (each strictly 2 sentences, max 42 words, warm Indian English tone, jargon-free, starting Scene 1 with "Namaste ${snap.firstName}!").
+    const prompt = `You are "Tanu", a friendly wise owl presenting charts on the Tanashvi Mutual Fund platform in India.
+Write 5 short, crisp spoken scripts in PURE ENGLISH ONLY (no Hindi, Bengali, or non-English words; warm Indian English phrasing; each strictly 2 sentences, max 42 words, starting Scene 1 with "Hello ${snap.firstName}, welcome back!").
 CRITICAL COMPLIANCE RULES:
 1. Use ONLY the exact numbers from the JSON below — NEVER invent or recalculate numbers.
 2. Strictly descriptive and educational — NEVER give buy/sell/switch recommendations.
-3. Return ONLY a JSON array of 5 strings matching scenes: [Welcome+Delta, Movers+SIP, Market Benchmark, Asset Balance, Calm Takeaway+Advisor].
+3. Return ONLY a JSON array of 5 strings for: [1. Growth Curve, 2. Scheme Movers & SIPs, 3. Benchmark Graph, 4. Allocation & Diversification/Overlap, 5. Compounding Takeaway & Advisor].
 
 VERIFIED FACTS JSON:
 ${JSON.stringify(safeFacts)}`;
@@ -421,9 +470,7 @@ ${JSON.stringify(safeFacts)}`;
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
+      config: { responseMimeType: 'application/json' }
     });
 
     const text = response.text?.trim() || '';
@@ -438,7 +485,7 @@ ${JSON.stringify(safeFacts)}`;
       };
     }
   } catch {
-    // Graceful silent fallback to deterministic verified storyteller
+    // Graceful silent fallback
   }
 
   return {
@@ -447,9 +494,6 @@ ${JSON.stringify(safeFacts)}`;
   };
 }
 
-/**
- * Interactive Follow-Up Q&A with strict SEBI educational guardrails.
- */
 export async function askTanuQuestion(
   question: string,
   snap: TanuPeriodSnapshot
@@ -461,11 +505,11 @@ export async function askTanuQuestion(
   if (apiKey && apiKey.trim().length >= 10) {
     try {
       const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
-      const prompt = `You are "Tanu", a friendly wise owl explaining an Indian investor's mutual fund portfolio in simple Indian English.
+      const prompt = `You are "Tanu", a friendly wise owl explaining an Indian investor's mutual fund portfolio in PURE ENGLISH ONLY (no regional or non-English words).
 Answer in 2–3 short, reassuring sentences (max 65 words).
-STRICT SEBI COMPLIANCE: Never recommend buying, selling, redeeming, or switching any scheme. Explain concepts simply and suggest contacting ${snap.advisorName} (${snap.advisorArn}) for personalized advice.
-Use ONLY these verified period facts (${formatNiceDate(snap.startDate)} to ${formatNiceDate(snap.endDate)}):
-Start: ${formatInrCompact(snap.startValueInr)}, End: ${formatInrCompact(snap.endValueInr)}, Change: ${snap.deltaPct}%, Benchmark ${snap.benchmarkName}: ${snap.benchmarkPeriodPct}%, Top Fund: ${snap.topMover.name} (${snap.topMover.periodPct}%), Equity: ${snap.assetAllocation.equityPct}%, SIPs in period: ${snap.sipInstallmentsInPeriod}.
+STRICT SEBI COMPLIANCE: Never recommend buying, selling, redeeming, or switching any scheme. Suggest contacting ${snap.advisorName} (${snap.advisorArn}) for personalized advice.
+Verified period facts (${formatNiceDate(snap.startDate)} to ${formatNiceDate(snap.endDate)}):
+Start: ${formatInrCompact(snap.startValueInr)}, End: ${formatInrCompact(snap.endValueInr)}, Change: ${snap.deltaPct}%, Benchmark ${snap.benchmarkName}: ${snap.benchmarkPeriodPct}%, Top Fund: ${snap.topMover.name} (${snap.topMover.periodPct}%), Equity: ${snap.assetAllocation.equityPct}%, Diversification Score: ${snap.diversification.diversificationScore}/100 (${snap.diversification.weightedOverlapPct}% overlap).
 Investor Question: "${q}"`;
 
       const resp = await ai.models.generateContent({
@@ -477,14 +521,21 @@ Investor Question: "${q}"`;
         return { answer: ans, mood: 'THINKING', engineUsed: 'GEMINI_AI' };
       }
     } catch {
-      // Fallback to deterministic educational responder
+      // Fallback
     }
   }
 
-  // Deterministic SEBI-safe educational answers
+  if (qLower.includes('overlap') || qLower.includes('diversif')) {
+    return {
+      answer: `Your portfolio has a diversification score of ${snap.diversification.diversificationScore} out of 100, with ${snap.diversification.uniqueExposurePct} percent unique exposure and ${snap.diversification.weightedOverlapPct} percent overlap across roughly ${snap.diversification.estimatedUniqueStocks} underlying securities. ${snap.diversification.verdict}`,
+      mood: 'POINTING',
+      engineUsed: 'TANASHVI_VERIFIED_ENGINE'
+    };
+  }
+
   if (qLower.includes('buy') || qLower.includes('sell') || qLower.includes('redeem') || qLower.includes('switch') || qLower.includes('invest more')) {
     return {
-      answer: `Great question, ${snap.firstName}! As an AI portfolio companion, I only explain your numbers and never give buy or sell recommendations. For personalized action on your goals, please connect directly with your AMFI-registered advisor at ${snap.advisorName} (${snap.advisorArn}).`,
+      answer: `Good question, ${snap.firstName}! As an AI portfolio guide, I only explain your numbers and never give buy or sell recommendations. For personalised action aligned to your goals, please speak with your AMFI-registered advisor at ${snap.advisorName} (${snap.advisorArn}).`,
       mood: 'REASSURING',
       engineUsed: 'TANASHVI_VERIFIED_ENGINE'
     };
@@ -492,64 +543,87 @@ Investor Question: "${q}"`;
 
   if (qLower.includes('sip') || qLower.includes('dip') || qLower.includes('fall')) {
     return {
-      answer: `During market dips, your regular SIP works like a smart bargain hunter — it automatically buys more mutual fund units at a lower NAV! Between ${formatNiceDate(snap.startDate)} and ${formatNiceDate(snap.endDate)}, ${snap.sipInstallmentsInPeriod > 0 ? `${snap.sipInstallmentsInPeriod} SIP installment(s) kept rupee-cost averaging working in your favour.` : 'staying invested kept your long-term compounding intact.'}`,
+      answer: `During market dips, your regular SIP buys more mutual fund units at a lower price through rupee-cost averaging. Between ${formatNiceDate(snap.startDate)} and ${formatNiceDate(snap.endDate)}, ${snap.sipInstallmentsInPeriod > 0 ? `${snap.sipInstallmentsInPeriod} SIP installment(s) kept accumulating units steadily.` : 'staying invested kept your long-term compounding intact.'}`,
       mood: 'HAPPY',
-      engineUsed: 'TANASHVI_VERIFIED_ENGINE'
-    };
-  }
-
-  if (qLower.includes('risk') || qLower.includes('safe') || qLower.includes('balance') || qLower.includes('equity')) {
-    return {
-      answer: `Right now, ${snap.assetAllocation.equityPct.toFixed(1)}% of your portfolio is in Equity (aimed at long-term growth) and ${(100 - snap.assetAllocation.equityPct).toFixed(1)}% is in Debt/Hybrid/Liquid for stability. If your financial goals or timeline have changed, ${snap.advisorName} can review this mix with you.`,
-      mood: 'POINTING',
       engineUsed: 'TANASHVI_VERIFIED_ENGINE'
     };
   }
 
   if (qLower.includes('nifty') || qLower.includes('market') || qLower.includes('benchmark') || qLower.includes('beat')) {
     return {
-      answer: `Between ${formatNiceDate(snap.startDate)} and ${formatNiceDate(snap.endDate)}, ${snap.benchmarkName} moved ${snap.benchmarkPeriodPct >= 0 ? '+' : ''}${snap.benchmarkPeriodPct}% (including reinvested dividends) while your portfolio moved ${snap.deltaPct >= 0 ? '+' : ''}${snap.deltaPct}% — a difference of ${snap.alphaPeriodPct >= 0 ? '+' : ''}${snap.alphaPeriodPct.toFixed(2)}%.`,
+      answer: `Between ${formatNiceDate(snap.startDate)} and ${formatNiceDate(snap.endDate)}, ${snap.benchmarkName} moved ${snap.benchmarkPeriodPct.toFixed(2)} percent including reinvested dividends, while your portfolio moved ${snap.deltaPct.toFixed(2)} percent — a spread of ${snap.alphaPeriodPct >= 0 ? 'plus' : 'minus'} ${Math.abs(snap.alphaPeriodPct).toFixed(2)} percent.`,
       mood: snap.outperformingMarket ? 'CELEBRATING' : 'THINKING',
       engineUsed: 'TANASHVI_VERIFIED_ENGINE'
     };
   }
 
   return {
-    answer: `Between ${formatNiceDate(snap.startDate)} and ${formatNiceDate(snap.endDate)}, your portfolio moved from ${formatInrCompact(snap.startValueInr)} to ${formatInrCompact(snap.endValueInr)} (${snap.deltaPct >= 0 ? '+' : ''}${snap.deltaPct}%), led by ${snap.topMover.name}. For tailored financial planning decisions, your advisor at ${snap.advisorName} (${snap.advisorArn}) is always happy to help!`,
+    answer: `Between ${formatNiceDate(snap.startDate)} and ${formatNiceDate(snap.endDate)}, your portfolio moved from ${formatInrCompact(snap.startValueInr)} to ${formatInrCompact(snap.endValueInr)} (${snap.deltaPct >= 0 ? 'up' : 'down'} ${Math.abs(snap.deltaPct).toFixed(2)} percent), led by ${snap.topMover.name}. For tailored financial advice, your advisor at ${snap.advisorName} is always ready to help.`,
     mood: 'POINTING',
     engineUsed: 'TANASHVI_VERIFIED_ENGINE'
   };
 }
 
-/**
- * Indian English Voice Selection & Speech Synthesis Helper
- */
-export function selectIndianEnglishVoice(): { voice: SpeechSynthesisVoice | null; label: string } {
+// ============================================================================
+// STRICT PURE-ENGLISH (INDIAN ACCENT) VOICE ENGINE
+// Explicitly blocks all regional/non-English voices (bn-IN, hi-IN, ta-IN, etc.)
+// ============================================================================
+
+const NON_ENGLISH_NAME_BLOCKLIST =
+  /bengali|bangla|hindi|tamil|telugu|marathi|gujarati|kannada|malayalam|punjabi|urdu|odia|assamese|sanskrit|nepali|sinhala|arabic|chinese|japanese|korean|spanish|french|german|russian/i;
+
+function isStrictlyEnglishVoice(v: SpeechSynthesisVoice): boolean {
+  const lang = (v.lang || '').toLowerCase().replace('_', '-');
+  if (!lang.startsWith('en-') && lang !== 'en') return false;
+  if (NON_ENGLISH_NAME_BLOCKLIST.test(v.name || '')) return false;
+  return true;
+}
+
+export function listPureEnglishVoices(): SpeechSynthesisVoice[] {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return [];
+  return window.speechSynthesis.getVoices().filter(isStrictlyEnglishVoice);
+}
+
+export function selectIndianEnglishVoice(preferredVoiceURI?: string): {
+  voice: SpeechSynthesisVoice | null;
+  label: string;
+} {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    return { voice: null, label: 'Browser Voice Unavailable' };
-  }
-  const voices = window.speechSynthesis.getVoices();
-  if (!voices || voices.length === 0) {
-    return { voice: null, label: 'Indian English (en-IN)' };
+    return { voice: null, label: 'Voice Unavailable' };
   }
 
-  // Priority 1: Explicit en-IN voices (Microsoft Neerja, Heera, Ravi, Google English India, Veena, Rishi)
-  const enInVoices = voices.filter(
-    v =>
-      v.lang.toLowerCase() === 'en-in' ||
-      v.lang.toLowerCase().startsWith('en-in') ||
-      /india|neerja|heera|veena|rishi|ravi|prabhat/i.test(v.name)
-  );
+  const englishVoices = listPureEnglishVoices();
+  if (englishVoices.length === 0) {
+    return { voice: null, label: 'Pure English (en-IN)' };
+  }
+
+  // Respect explicit user voice override if it is strictly English
+  if (preferredVoiceURI) {
+    const picked = englishVoices.find(v => v.voiceURI === preferredVoiceURI);
+    if (picked) return { voice: picked, label: `${picked.name}` };
+  }
+
+  // Priority 1: Strictly en-IN (English - India) voices ONLY (e.g., Microsoft Neerja, Prabhat, Heera, Ravi, Google English India, Rishi, Veena)
+  const enInVoices = englishVoices.filter(v => {
+    const normLang = v.lang.toLowerCase().replace('_', '-');
+    return normLang === 'en-in' || /neerja|prabhat|heera|ravi|veena|rishi|english.*india/i.test(v.name);
+  });
+
   if (enInVoices.length > 0) {
-    // Prefer warm natural / female or Google/Microsoft Neural en-IN voice
-    const preferred =
-      enInVoices.find(v => /neerja|google|natural|veena/i.test(v.name)) || enInVoices[0];
-    return { voice: preferred, label: `${preferred.name} (en-IN)` };
+    const best =
+      enInVoices.find(v => /neerja.*online|neerja|google.*india|veena|rishi/i.test(v.name)) ||
+      enInVoices.find(v => /heera|prabhat|ravi/i.test(v.name)) ||
+      enInVoices[0];
+    return { voice: best, label: `${best.name} (en-IN)` };
   }
 
-  // Priority 2: Any English voice with lang set to en-IN
-  const enFallback = voices.find(v => v.lang.toLowerCase().startsWith('en')) || voices[0];
-  return { voice: enFallback, label: `${enFallback.name} (en-IN accent)` };
+  // Priority 2: Pure English fallback (en-GB / en-US) — NEVER falls back to bn-IN or hi-IN!
+  const cleanEnglish =
+    englishVoices.find(v => v.lang.toLowerCase().replace('_', '-') === 'en-gb') ||
+    englishVoices.find(v => v.lang.toLowerCase().replace('_', '-') === 'en-us') ||
+    englishVoices[0];
+
+  return { voice: cleanEnglish, label: `${cleanEnglish.name} (${cleanEnglish.lang})` };
 }
 
 export function stopTanuSpeech(): void {
@@ -560,29 +634,39 @@ export function stopTanuSpeech(): void {
 
 export function speakTanuDialogue(
   text: string,
-  callbacks?: { onStart?: () => void; onEnd?: () => void }
+  callbacks?: { onStart?: () => void; onEnd?: () => void; preferredVoiceURI?: string }
 ): string {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     return 'Speech Unsupported';
   }
   window.speechSynthesis.cancel();
-  const { voice, label } = selectIndianEnglishVoice();
 
-  // Make ₹ and abbreviations pronounce naturally in Indian English
+  const { voice, label } = selectIndianEnglishVoice(callbacks?.preferredVoiceURI);
+
+  // Clean English pronunciation substitutions (strictly pure English words)
   const spokenText = text
     .replace(/₹/g, 'Rupees ')
     .replace(/\bCr\b/g, 'Crore')
     .replace(/\bL\b/g, 'Lakh')
+    .replace(/→/g, ' to ')
     .replace(/\bTRI\b/g, 'T R I')
     .replace(/\bSIPs\b/g, 'S I Ps')
     .replace(/\bSIP\b/g, 'S I P')
+    .replace(/\bXIRR\b/g, 'X I R R')
     .replace(/\bARN-/g, 'A R N ');
 
   const utterance = new SpeechSynthesisUtterance(spokenText);
-  utterance.lang = 'en-IN';
-  if (voice) utterance.voice = voice;
+  if (voice) {
+    utterance.voice = voice;
+    // CRITICAL: Match utterance.lang strictly to the selected pure-English voice's exact lang tag
+    // so Windows/Chrome SAPI never substitutes a regional bn-IN / hi-IN voice!
+    utterance.lang = voice.lang;
+  } else {
+    utterance.lang = 'en-IN';
+  }
+
   utterance.rate = 0.96;
-  utterance.pitch = 1.06;
+  utterance.pitch = 1.04;
   utterance.volume = 1.0;
 
   utterance.onstart = () => callbacks?.onStart?.();

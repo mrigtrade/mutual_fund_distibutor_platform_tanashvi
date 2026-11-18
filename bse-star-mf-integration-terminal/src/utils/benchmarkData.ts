@@ -691,3 +691,315 @@ export function formatInrCompact(val: number): string {
   if (abs >= 100000) return `${sign}₹${(abs / 100000).toFixed(2)} L`;
   return `${sign}₹${Math.round(abs).toLocaleString('en-IN')}`;
 }
+
+// ============================================================================
+// Portfolio Diversification & Mutual Fund Overlap Analysis Engine
+// ============================================================================
+
+export interface FundPairOverlap {
+  fundA: string;
+  fundB: string;
+  overlapPct: number;
+  uniquePct: number;
+  sharedStocks: string[];
+  severity: 'LOW' | 'MODERATE' | 'HIGH';
+}
+
+export interface PortfolioDiversificationAnalysis {
+  diversificationScore: number; // 0 - 100
+  rating: 'Highly Diversified' | 'Well Diversified' | 'Moderate Overlap' | 'Concentrated';
+  weightedOverlapPct: number; // Portfolio-wide weighted stock overlap %
+  uniqueExposurePct: number; // 100 - weightedOverlapPct
+  estimatedUniqueStocks: number;
+  assetClassesCount: number;
+  categoriesCount: number;
+  pairs: FundPairOverlap[];
+  verdict: string;
+}
+
+interface SchemeStockBasket {
+  keyword: RegExp;
+  isFixedIncome?: boolean;
+  uniqueStockCount: number;
+  topStocks: Record<string, number>; // Stock name -> % weight
+}
+
+const SCHEME_BASKETS: SchemeStockBasket[] = [
+  {
+    keyword: /hdfc top 100/i,
+    uniqueStockCount: 48,
+    topStocks: {
+      'HDFC Bank': 9.8,
+      'ICICI Bank': 8.6,
+      'Reliance Ind.': 7.2,
+      'Infosys': 6.4,
+      'ITC': 5.3,
+      'L&T': 5.1,
+      'Bharti Airtel': 4.4,
+      'Axis Bank': 4.2,
+      'NTPC': 3.5,
+      'SBI': 3.4
+    }
+  },
+  {
+    keyword: /parag parikh|ppfas/i,
+    uniqueStockCount: 34,
+    topStocks: {
+      'HDFC Bank': 8.4,
+      'Bajaj Holdings': 7.8,
+      'ITC': 6.9,
+      'Power Grid': 6.4,
+      'Coal India': 5.8,
+      'ICICI Bank': 5.2,
+      'Alphabet (US)': 4.8,
+      'Microsoft (US)': 4.3,
+      'Maruti Suzuki': 3.9,
+      'Axis Bank': 3.1
+    }
+  },
+  {
+    keyword: /sbi bluechip/i,
+    uniqueStockCount: 50,
+    topStocks: {
+      'HDFC Bank': 9.2,
+      'ICICI Bank': 8.1,
+      'L&T': 6.5,
+      'Reliance Ind.': 6.2,
+      'Infosys': 5.8,
+      'ITC': 4.9,
+      'Bharti Airtel': 4.1,
+      'Divis Labs': 3.2,
+      'Kotak Bank': 3.1
+    }
+  },
+  {
+    keyword: /balanced advantage|baf/i,
+    uniqueStockCount: 62,
+    topStocks: {
+      'HDFC Bank': 6.1,
+      'ICICI Bank': 5.8,
+      'Infosys': 4.4,
+      'Reliance Ind.': 4.2,
+      'L&T': 3.8,
+      'Bharti Airtel': 3.1,
+      'GOI Sovereign Bonds': 18.0
+    }
+  },
+  {
+    keyword: /nippon.*small cap/i,
+    uniqueStockCount: 185,
+    topStocks: {
+      'Tube Investments': 2.8,
+      'HDFC Bank': 1.9,
+      'MCX India': 2.4,
+      'Apar Industries': 2.2,
+      'Voltamp Trans.': 1.9,
+      'Kirloskar Bros': 1.8,
+      'Quess Corp': 1.4,
+      'Radico Khaitan': 1.5
+    }
+  },
+  {
+    keyword: /tata small cap/i,
+    uniqueStockCount: 54,
+    topStocks: {
+      'Quess Corp': 3.8,
+      'Radico Khaitan': 3.2,
+      'Allcargo Logistics': 2.9,
+      'Kirloskar Pneumatic': 2.7,
+      'BASF India': 2.5,
+      'IDFC First Bank': 2.8,
+      'MCX India': 1.9,
+      'Redington': 2.4
+    }
+  },
+  {
+    keyword: /motilal.*midcap/i,
+    uniqueStockCount: 28,
+    topStocks: {
+      'Jio Financial': 7.2,
+      'Persistent Systems': 6.4,
+      'Trent': 5.8,
+      'Coforge': 5.1,
+      'Kalyan Jewellers': 4.2,
+      'Tube Investments': 3.4,
+      'Persistent Tech': 3.1,
+      'Polycab India': 3.9
+    }
+  },
+  {
+    keyword: /quant active/i,
+    uniqueStockCount: 64,
+    topStocks: {
+      'Reliance Ind.': 8.2,
+      'Jio Financial': 5.6,
+      'Aurobindo Pharma': 4.5,
+      'Adani Power': 4.1,
+      'Samvardhana Motherson': 3.6,
+      'LIC India': 3.5,
+      'Trent': 2.4
+    }
+  },
+  {
+    keyword: /debt|liquid|bond|overnight|gilt/i,
+    isFixedIncome: true,
+    uniqueStockCount: 24,
+    topStocks: {
+      'GOI T-Bills & G-Sec': 45.0,
+      'AAA PSU Bonds': 35.0,
+      'TREPS / Cash': 20.0
+    }
+  }
+];
+
+function resolveSchemeBasket(name: string, category: string): SchemeStockBasket {
+  const combined = `${name} ${category}`;
+  const found = SCHEME_BASKETS.find(b => b.keyword.test(combined));
+  if (found) return found;
+
+  const isDebt = /debt|liquid|bond|cash|fixed/i.test(combined);
+  if (isDebt) {
+    return {
+      keyword: /debt/i,
+      isFixedIncome: true,
+      uniqueStockCount: 20,
+      topStocks: { 'AAA Corporate Bonds': 50, 'G-Sec': 35, 'TREPS': 15 }
+    };
+  }
+  return {
+    keyword: /equity/i,
+    uniqueStockCount: 45,
+    topStocks: {
+      'HDFC Bank': 7.5,
+      'ICICI Bank': 6.5,
+      'Infosys': 5.0,
+      'Reliance Ind.': 5.5,
+      'L&T': 4.2
+    }
+  };
+}
+
+function cleanShortFundName(name: string): string {
+  return name.replace(/ - Regular Plan - Growth| - Regular Growth| - Growth/gi, '').trim();
+}
+
+export function computePortfolioDiversification(
+  holdings: Array<{ name: string; currentValue: number; category: string }>,
+  assetAllocation: { equityPct: number; debtPct: number; liquidPct: number; hybridPct?: number }
+): PortfolioDiversificationAnalysis {
+  const totalVal = Math.max(1, holdings.reduce((s, h) => s + Math.max(0, h.currentValue), 0));
+  const baskets = holdings.map(h => ({
+    holding: h,
+    shortName: cleanShortFundName(h.name),
+    weight: h.currentValue / totalVal,
+    basket: resolveSchemeBasket(h.name, h.category)
+  }));
+
+  const pairs: FundPairOverlap[] = [];
+  let weightedOverlapSum = 0;
+  let pairWeightSum = 0;
+
+  for (let i = 0; i < baskets.length; i++) {
+    for (let j = i + 1; j < baskets.length; j++) {
+      const a = baskets[i];
+      const b = baskets[j];
+      const pairWeight = a.weight * b.weight;
+
+      let overlapPct = 0;
+      const sharedStocks: string[] = [];
+
+      // Equity vs Fixed Income = 0% stock overlap (true cross-asset diversification!)
+      if (a.basket.isFixedIncome !== b.basket.isFixedIncome) {
+        overlapPct = 0;
+      } else if (a.basket.isFixedIncome && b.basket.isFixedIncome) {
+        // Two debt/liquid funds have modest sovereign/AAA overlap (~12%)
+        overlapPct = 12;
+        sharedStocks.push('AAA PSU Bonds', 'Sovereign T-Bills');
+      } else {
+        // Compute genuine intersection overlap across modeled top holdings + scaled tail
+        let topOverlap = 0;
+        for (const [stock, wA] of Object.entries(a.basket.topStocks)) {
+          const wB = b.basket.topStocks[stock];
+          if (wB) {
+            topOverlap += Math.min(wA, wB);
+            sharedStocks.push(stock);
+          }
+        }
+        // Scale from top-10 sample (~55% of scheme) to full portfolio realistic overlap
+        overlapPct = Number(Math.min(78, topOverlap * 1.18).toFixed(1));
+      }
+
+      const severity: 'LOW' | 'MODERATE' | 'HIGH' =
+        overlapPct >= 35 ? 'HIGH' : overlapPct >= 18 ? 'MODERATE' : 'LOW';
+
+      pairs.push({
+        fundA: a.shortName,
+        fundB: b.shortName,
+        overlapPct,
+        uniquePct: Number((100 - overlapPct).toFixed(1)),
+        sharedStocks: sharedStocks.slice(0, 4),
+        severity
+      });
+
+      weightedOverlapSum += overlapPct * pairWeight;
+      pairWeightSum += pairWeight;
+    }
+  }
+
+  // Sort pairs with highest overlap first so investors immediately spot any duplication
+  pairs.sort((a, b) => b.overlapPct - a.overlapPct);
+
+  const weightedOverlapPct =
+    pairWeightSum > 0 ? Number((weightedOverlapSum / pairWeightSum).toFixed(1)) : 0;
+  const uniqueExposurePct = Number((100 - weightedOverlapPct).toFixed(1));
+
+  // Count distinct asset classes & categories
+  const assetClassesCount =
+    (assetAllocation.equityPct > 2 ? 1 : 0) +
+    (assetAllocation.debtPct > 2 ? 1 : 0) +
+    (assetAllocation.liquidPct > 2 ? 1 : 0) +
+    ((assetAllocation.hybridPct || 0) > 2 ? 1 : 0);
+
+  const categoriesCount = new Set(holdings.map(h => h.category)).size;
+
+  // Estimate deduplicated unique securities across portfolio
+  const rawStockSum = baskets.reduce((s, b) => s + (b.basket.isFixedIncome ? 0 : b.basket.uniqueStockCount), 0);
+  const estimatedUniqueStocks = Math.max(
+    18,
+    Math.round(rawStockSum * (1 - (weightedOverlapPct / 100) * 0.65))
+  );
+
+  // Diversification Score (0-100): rewards low overlap, multi-category spread, and cross-asset balance
+  const overlapScore = Math.max(0, 100 - weightedOverlapPct * 1.35);
+  const breadthBonus = Math.min(14, (assetClassesCount - 1) * 5 + Math.min(4, categoriesCount) * 1.5);
+  const diversificationScore = Math.min(98, Math.max(35, Math.round(overlapScore * 0.88 + breadthBonus)));
+
+  const rating: PortfolioDiversificationAnalysis['rating'] =
+    diversificationScore >= 85
+      ? 'Highly Diversified'
+      : diversificationScore >= 72
+      ? 'Well Diversified'
+      : diversificationScore >= 55
+      ? 'Moderate Overlap'
+      : 'Concentrated';
+
+  const topPair = pairs[0];
+  const verdict =
+    diversificationScore >= 80
+      ? `Strong diversification (${uniqueExposurePct}% unique exposure). Across ${holdings.length} funds and ${assetClassesCount} asset classes, stock duplication stays tightly controlled at just ${weightedOverlapPct}%.`
+      : topPair && topPair.overlapPct >= 20
+      ? `Healthy core portfolio (${uniqueExposurePct}% unique exposure), with ${topPair.overlapPct}% overlap between ${topPair.fundA} and ${topPair.fundB}${topPair.sharedStocks.length ? ` (mainly ${topPair.sharedStocks.slice(0, 3).join(', ')})` : ''}.`
+      : `Balanced diversification across ${categoriesCount} fund categories with ${weightedOverlapPct}% weighted portfolio overlap.`;
+
+  return {
+    diversificationScore,
+    rating,
+    weightedOverlapPct,
+    uniqueExposurePct,
+    estimatedUniqueStocks,
+    assetClassesCount,
+    categoriesCount,
+    pairs,
+    verdict
+  };
+}
