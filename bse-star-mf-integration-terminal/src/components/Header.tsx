@@ -1,5 +1,7 @@
+import React, { useState } from 'react';
 import { BseCredentials, ActiveUserSession } from '../types/bse';
-import { Server, Settings, CheckCircle2, AlertTriangle, ShieldCheck, Users, UserCheck, Building2, User, Briefcase } from 'lucide-react';
+import { LiveBseStatus } from '../services/liveBseUatClient';
+import { Settings, CheckCircle2, AlertTriangle, ShieldCheck, Users, Building2, User, Briefcase, Radio, RefreshCw, ArrowUpRight, X } from 'lucide-react';
 import { TanashviLogo } from './TanashviLogo';
 
 interface HeaderProps {
@@ -7,6 +9,9 @@ interface HeaderProps {
   onTabChange: (tab: string) => void;
   credentials: BseCredentials;
   currentSession: ActiveUserSession;
+  liveBseStatus?: LiveBseStatus | null;
+  isCheckingLiveBse?: boolean;
+  onRefreshLiveBse?: () => void;
   onOpenSettings: () => void;
   onOpenDoc: () => void;
   onOpenSessionModal: () => void;
@@ -17,10 +22,14 @@ export const Header: React.FC<HeaderProps> = ({
   onTabChange,
   credentials,
   currentSession,
+  liveBseStatus,
+  isCheckingLiveBse = false,
+  onRefreshLiveBse,
   onOpenSettings,
   onOpenDoc,
   onOpenSessionModal
 }) => {
+  const [showLivePopover, setShowLivePopover] = useState(false);
   // Dynamic navigation items based on the active role
   const getNavItems = () => {
     if (currentSession.role === 'CLIENT_INVESTOR') {
@@ -150,9 +159,133 @@ export const Header: React.FC<HeaderProps> = ({
 
           {currentSession.role !== 'CLIENT_INVESTOR' && (
             <>
+              {/* Live BSE StAR MF v2.0 UAT Connection Badge + Diagnostics Popover */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowLivePopover((prev) => !prev)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap cursor-pointer border ${
+                    liveBseStatus?.authenticated
+                      ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/50 hover:border-emerald-400'
+                      : isCheckingLiveBse
+                      ? 'bg-amber-950/50 text-amber-300 border-amber-500/40'
+                      : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:border-slate-500'
+                  }`}
+                  title="Live BSE StAR MF v2.0 UAT Connection Status via Zero-Domain Proxy"
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      liveBseStatus?.authenticated
+                        ? 'bg-emerald-400 animate-pulse'
+                        : isCheckingLiveBse
+                        ? 'bg-amber-400 animate-pulse'
+                        : 'bg-slate-400'
+                    }`}
+                  />
+                  <span className="font-mono font-semibold">
+                    {liveBseStatus?.authenticated
+                      ? `LIVE BSE: ${liveBseStatus.memberId}`
+                      : isCheckingLiveBse
+                      ? 'BSE UAT...'
+                      : 'SANDBOX'}
+                  </span>
+                </button>
+
+                {showLivePopover && (
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-4 z-50 text-xs space-y-3">
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <Radio className={`w-4 h-4 ${liveBseStatus?.authenticated ? 'text-emerald-400' : 'text-amber-400'}`} />
+                        <div>
+                          <div className="font-bold text-white text-xs">
+                            {liveBseStatus?.authenticated
+                              ? 'LIVE BSE StAR MF v2.0 UAT Connected'
+                              : 'Running in Sandbox Fallback Mode'}
+                          </div>
+                          <div className="text-[11px] text-slate-400">
+                            Zero-Domain Vercel Proxy · tanashvi.in untouched
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowLivePopover(false)}
+                        className="text-slate-400 hover:text-white p-0.5 cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {liveBseStatus?.authenticated ? (
+                      <div className="space-y-1.5 font-mono text-[11px] bg-slate-950/80 border border-slate-800 rounded-lg p-3">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Member ID / Type:</span>
+                          <span className="text-emerald-300 font-semibold">{liveBseStatus.memberId} ({liveBseStatus.orgType})</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Auth Protocol:</span>
+                          <span className="text-white">RS256 Bearer JWT</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Token TTL / Latency:</span>
+                          <span className="text-amber-300">{Math.round(liveBseStatus.expiresInSec / 60)}m · {liveBseStatus.latencyMs}ms</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Whitelisted Bridge:</span>
+                          <span className="text-slate-200">130.210.57.235</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-slate-400 shrink-0">Gateway:</span>
+                          <span className="text-slate-300 truncate">{liveBseStatus.gateway}</span>
+                        </div>
+                        <div className="pt-1.5 border-t border-slate-800 flex flex-wrap gap-1">
+                          {liveBseStatus.roles.map((r) => (
+                            <span
+                              key={r}
+                              className="px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 text-[10px]"
+                            >
+                              {r}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 bg-amber-950/30 border border-amber-500/30 rounded-lg text-amber-200 text-[11px]">
+                        Live BSE UAT bridge did not respond ({liveBseStatus?.error || 'checking...'}). All platform workflows continue smoothly with local sandbox data.
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      {onRefreshLiveBse && (
+                        <button
+                          type="button"
+                          onClick={onRefreshLiveBse}
+                          disabled={isCheckingLiveBse}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md font-medium cursor-pointer disabled:opacity-50"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${isCheckingLiveBse ? 'animate-spin' : ''}`} />
+                          <span>Re-Ping BSE</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowLivePopover(false);
+                          onTabChange('schemes');
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-semibold rounded-md cursor-pointer ml-auto"
+                      >
+                        <span>28,128 Live Schemes</span>
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={onOpenDoc}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-300 hover:text-white border border-slate-700 rounded-md transition-colors whitespace-nowrap cursor-pointer hover:bg-slate-800"
+                className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-slate-300 hover:text-white border border-slate-700 rounded-md transition-colors whitespace-nowrap cursor-pointer hover:bg-slate-800"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Specs</span>
@@ -160,14 +293,15 @@ export const Header: React.FC<HeaderProps> = ({
 
               <button
                 onClick={onOpenSettings}
-                className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap cursor-pointer border ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap cursor-pointer border ${
                   credentials.connectionStatus === 'CONNECTED'
                     ? 'bg-slate-800/90 text-emerald-400 border-emerald-500/30 hover:border-emerald-500/60'
                     : 'bg-amber-950/40 text-amber-300 border-amber-500/30 hover:border-amber-500/60'
                 }`}
+                title="Configure BSE StAR MF Gateway Settings"
               >
                 <Settings className="w-3.5 h-3.5" />
-                <span className="font-mono">{credentials.environment.toUpperCase()}: {credentials.memberId}</span>
+                <span className="hidden sm:inline font-mono">{credentials.environment.toUpperCase()}: {credentials.memberId}</span>
                 {credentials.connectionStatus === 'CONNECTED' ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 ) : (
@@ -207,7 +341,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <>Active Persona: <strong className="text-white">Category 2: Sub-Broker ({currentSession.name})</strong> [Branch Code: <strong className="text-emerald-300">{currentSession.subBrokerCode}</strong> · EUIN: <strong className="text-white">{currentSession.euin}</strong>]</>
               )}
               {(currentSession.role === 'PLATFORM_SUPER_ADMIN' || currentSession.role === 'MASTER_MFD') && (
-                <>Active Persona: <strong className="text-white">Category 4: Tanashvi Platform HQ & Promoters</strong> [Member: <strong className="text-[#c5a059]">714114</strong> · ARN: <strong className="text-white">ARN-347849</strong>]</>
+                <>Active Persona: <strong className="text-white">Category 4: Tanashvi Platform HQ & Promoters</strong> [Member: <strong className="text-[#c5a059]">{credentials.memberId || '94515'}</strong> · ARN: <strong className="text-white">ARN-347849</strong>{liveBseStatus?.authenticated ? <> · <strong className="text-emerald-300">BSE UAT LIVE</strong></> : null}]</>
               )}
             </span>
           </div>

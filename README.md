@@ -1,6 +1,6 @@
 # Tanashvi B2B Mutual Fund Platform (BSE StAR MF v2 Integration)
 
-A proprietary, high-performance, multi-tenant B2B mutual fund transaction, advisory, and calculation engine developed for **Tanashvi Fintech Private Limited** (ARN-347849 / BSE Member Code 714114) to facilitate mutual fund distribution for Tanashvi and onboarded independent Mutual Fund Distributors (MFDs) with feature parity to platforms like **AdvisorKhoj**.
+A proprietary, high-performance, multi-tenant B2B mutual fund transaction, advisory, and calculation engine developed for **Tanashvi Fintech Private Limited** (ARN-347849 / BSE Member Code 94515) to facilitate mutual fund distribution for Tanashvi and onboarded independent Mutual Fund Distributors (MFDs) with feature parity to platforms like **AdvisorKhoj**.
 
 * **Brand Identity:** **Tanashvi** (Legal entity: *Tanashvi Fintech Private Limited*)
 * **Corporate Motto / Tagline:** **भवतः हिताय** (*"Bhavatah Hitaya"* — *"For Your Welfare"*)

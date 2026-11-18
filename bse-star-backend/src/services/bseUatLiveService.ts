@@ -15,6 +15,7 @@ export class BseUatLiveService {
   private username: string;
   private password: string;
   private cachedToken: string | null = null;
+  private cachedClaims: any = null;
   private tokenExpiresAtMs = 0;
 
   private constructor() {
@@ -37,7 +38,8 @@ export class BseUatLiveService {
     if (!forceRefresh && this.cachedToken && this.tokenExpiresAtMs > now + 120_000) {
       return {
         token: this.cachedToken,
-        expiresInSec: Math.round((this.tokenExpiresAtMs - now) / 1000)
+        expiresInSec: Math.round((this.tokenExpiresAtMs - now) / 1000),
+        claims: this.cachedClaims
       };
     }
 
@@ -71,6 +73,7 @@ export class BseUatLiveService {
     }
 
     this.cachedToken = token;
+    this.cachedClaims = claims;
     this.tokenExpiresAtMs = now + expiresInSec * 1000;
     return { token, expiresInSec, claims };
   }

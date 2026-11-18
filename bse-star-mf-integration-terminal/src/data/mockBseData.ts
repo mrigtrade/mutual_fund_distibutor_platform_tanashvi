@@ -1,14 +1,14 @@
 import { BseCredentials, ClientUcc, Scheme, BseOrder, Mandate, SubDistributor, KycRecord } from '../types/bse';
 
 export const INITIAL_BSE_CREDENTIALS: BseCredentials = {
-  memberId: '714114', // Tanashvi BSE Member Code
-  userId: 'TANASHVI_ADMIN',
+  memberId: '94515', // Tanashvi Official BSE StAR MF v2.0 Member Code
+  userId: 'member/94515/tanashvifintechpvtltd',
   password: '••••••••••••',
-  passKey: 'BSE_PK_98f4a7c19e2b4d0083',
+  passKey: 'RS256_KEYCLOAK_JWT_MANAGED_ON_SERVER',
   environment: 'uat',
-  customGatewayUrl: 'https://v2.bsestarmf.in/api',
+  customGatewayUrl: 'https://starmfv2demo.bseindia.com/api',
   isConfigured: true,
-  lastTestedAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
+  lastTestedAt: new Date().toISOString(),
   connectionStatus: 'CONNECTED'
 };
 

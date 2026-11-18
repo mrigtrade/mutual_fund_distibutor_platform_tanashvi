@@ -25,6 +25,7 @@ import {
   MOCK_KYC_RECORDS
 } from './data/mockBseData';
 import { BseApiService } from './services/bseApiService';
+import { fetchLiveBseStatus, LiveBseStatus } from './services/liveBseUatClient';
 import { Header } from './components/Header';
 import { ApiConfigModal } from './components/ApiConfigModal';
 import { IntegrationGuideModal } from './components/IntegrationGuideModal';
@@ -49,7 +50,22 @@ import { CheckCircle2, Shield, Activity, RefreshCw } from 'lucide-react';
 export default function App() {
   const [credentials, setCredentials] = useState<BseCredentials>(() => {
     const saved = localStorage.getItem('bse_credentials');
-    return saved ? JSON.parse(saved) : INITIAL_BSE_CREDENTIALS;
+    if (saved) {
+      const parsed: BseCredentials = JSON.parse(saved);
+      // Migrate legacy placeholder Member ID 714114 -> Official BSE UAT Member 94515
+      if (parsed.memberId === '714114') {
+        const migrated: BseCredentials = {
+          ...parsed,
+          memberId: '94515',
+          userId: 'member/94515/tanashvifintechpvtltd',
+          customGatewayUrl: 'https://starmfv2demo.bseindia.com/api'
+        };
+        localStorage.setItem('bse_credentials', JSON.stringify(migrated));
+        return migrated;
+      }
+      return parsed;
+    }
+    return INITIAL_BSE_CREDENTIALS;
   });
 
   const [subDistributors, setSubDistributors] = useState<SubDistributor[]>(() => {
@@ -59,15 +75,30 @@ export default function App() {
 
   const [currentSession, setCurrentSession] = useState<ActiveUserSession>(() => {
     const saved = localStorage.getItem('bse_active_session');
-    return saved ? JSON.parse(saved) : {
+    if (saved) {
+      const parsed: ActiveUserSession = JSON.parse(saved);
+      if (parsed.memberId === '714114') {
+        const migrated: ActiveUserSession = {
+          ...parsed,
+          memberId: '94515',
+          roleTitle: 'Tanashvi Platform HQ (BSE Member 94515)'
+        };
+        localStorage.setItem('bse_active_session', JSON.stringify(migrated));
+        return migrated;
+      }
+      return parsed;
+    }
+    return {
       role: 'PLATFORM_SUPER_ADMIN',
       name: 'Tanashvi Promoters & Super-Admin',
-      memberId: '714114',
-      roleTitle: 'Tanashvi Platform HQ (BSE Member 714114)'
+      memberId: '94515',
+      roleTitle: 'Tanashvi Platform HQ (BSE Member 94515)'
     };
   });
 
-  const [schemes] = useState<Scheme[]>(MOCK_SCHEMES);
+  const [schemes, setSchemes] = useState<Scheme[]>(MOCK_SCHEMES);
+  const [liveBseStatus, setLiveBseStatus] = useState<LiveBseStatus | null>(null);
+  const [isCheckingLiveBse, setIsCheckingLiveBse] = useState<boolean>(true);
   const [clients, setClients] = useState<ClientUcc[]>(() => {
     const saved = localStorage.getItem('bse_clients');
     return saved ? JSON.parse(saved) : MOCK_CLIENTS;
@@ -106,8 +137,23 @@ export default function App() {
   // Logs
   const [logs, setLogs] = useState<ApiLog[]>([]);
 
+  const refreshLiveBseStatus = async (notify = false) => {
+    setIsCheckingLiveBse(true);
+    const status = await fetchLiveBseStatus();
+    setLiveBseStatus(status);
+    setIsCheckingLiveBse(false);
+    if (notify) {
+      if (status.authenticated) {
+        showToast(`LIVE BSE StAR MF v2.0 UAT Connected · Member ${status.memberId} (${status.latencyMs}ms)`);
+      } else {
+        showToast(`BSE UAT bridge offline (${status.error || 'timeout'}) — running smoothly in Sandbox fallback`);
+      }
+    }
+  };
+
   useEffect(() => {
     setLogs(BseApiService.getLogs());
+    refreshLiveBseStatus(false);
   }, []);
 
   const showToast = (msg: string) => {
@@ -226,9 +272,13 @@ export default function App() {
   };
 
   const handleSelectSchemeForOrder = (scheme: Scheme, type: 'LUMPSUM' | 'SIP') => {
+    setSchemes((prev) =>
+      prev.some((s) => s.schemeCode === scheme.schemeCode) ? prev : [scheme, ...prev]
+    );
     setPrefilledScheme(scheme);
     setPrefilledOrderType(type);
     setCurrentTab('orders');
+    showToast(`Loaded ${scheme.schemeName} (${scheme.schemeCode}) into Order Engine`);
   };
 
   const handleTradeWithClient = (client: ClientUcc) => {
@@ -258,6 +308,9 @@ export default function App() {
         onTabChange={(t) => setCurrentTab(t)}
         credentials={credentials}
         currentSession={currentSession}
+        liveBseStatus={liveBseStatus}
+        isCheckingLiveBse={isCheckingLiveBse}
+        onRefreshLiveBse={() => refreshLiveBseStatus(true)}
         onOpenSettings={() => setIsApiConfigOpen(true)}
         onOpenDoc={() => setIsDocOpen(true)}
         onOpenSessionModal={() => setIsSubDistributorModalOpen(true)}
@@ -308,6 +361,7 @@ export default function App() {
         {currentTab === 'schemes' && (
           <SchemeMaster
             schemes={schemes}
+            liveBseStatus={liveBseStatus}
             onSelectSchemeForOrder={handleSelectSchemeForOrder}
           />
         )}
@@ -369,7 +423,7 @@ export default function App() {
             <div className="text-left">
               <span className="font-serif font-bold text-white text-sm">Tanashvi</span>
               <span className="text-[#c5a059] font-serif ml-2 text-[11px]">भवतः हिताय</span>
-              <p className="text-[11px] text-slate-400">Tanashvi Fintech Private Limited · AMFI Registered ARN-347849 · BSE Member 714114</p>
+              <p className="text-[11px] text-slate-400">Tanashvi Fintech Private Limited · AMFI Registered ARN-347849 · BSE Member {credentials.memberId || '94515'}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 text-[11px]">

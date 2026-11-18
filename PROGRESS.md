@@ -23,6 +23,7 @@
 | **Phase 10** | Modern Frontend Web UI & Tanashvi Brand Experience | **COMPLETED** | Verified via Vite build (Lotus logo, theme, calculators, portfolio tax, cart) |
 | **Phase 11** | MF Research & Analytics Engine (AdvisorKhoj Parity) | **COMPLETED** | Verified via `test_phase11_research.ts` (Passed 100%) |
 | **Phase 12** | Live BSE Sandbox Integration (Post Static IP Whitelisting) | **IN PROGRESS (LIVE AUTH VERIFIED!)** | **HTTP 200 OK** on `/api/login` (`member/94515/tanashvifintechpvtltd`) & **28,128 live schemes** fetched via `/api/master_scheme_list` from `130.210.57.235` |
+| **Phase 17** | Zero-Domain Vercel Proxy & Live BSE UAT Data in Frontend | **COMPLETED** | `/api/bse-uat` Vercel serverless proxy bridges HTTPS frontend to `130.210.57.235:3000` (zero `tanashvi.in` DNS changes); live status, 28,128 schemes, 15,692 NAVs & UCC count wired in UI |
 
 ---
 
@@ -376,6 +377,18 @@
 * **Deployed For Both Investors & MFDs:**
   * **End Investor Portal (`InvestorPortalView.tsx`):** Floating animated Tanu Owl launcher in bottom-right corner + top banner `Ask Tanu (Owl Story)` CTA.
   * **MFD Portfolio & Tax (`PortfolioTaxView.tsx`):** `Play Client Story (Tanu)` button for live client review meetings across all client profiles.
+
+---
+
+### Phase 17: Zero-Domain Vercel Proxy & Live BSE StAR MF v2.0 UAT Frontend Integration
+* **Zero-Domain Vercel Serverless Proxy ([`api/bse-uat.js`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/api/bse-uat.js)):**
+  * Bridges HTTPS browser requests on `mutual-fund-distibutor-platform-tan.vercel.app` server-side to Oracle Cloud (`http://130.210.57.235:3000/api/v1/bse-uat/*`) without touching `tanashvi.in` DNS or SSL, keeping all BSE credentials strictly inside Oracle Cloud `.env`.
+  * Strict read-only `action` allowlist (`status`, `schemes`, `nav`, `ucc_list`, `benchmarks`), 18s timeout protection, and identical local dev middleware in [`vite.config.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/vite.config.ts).
+* **Live BSE UAT UI Integration (`bse-star-mf-integration-terminal`):**
+  * **Typed Client ([`liveBseUatClient.ts`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/services/liveBseUatClient.ts)):** Parses BSE v2 `/master_scheme_list`, `/nav_master_list`, `/v2/list_ucc`, and `/login` status, plus maps live BSE schemes directly into the Order Terminal.
+  * **Header Live Badge & Diagnostics ([`Header.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/Header.tsx)) & Gateway Ping ([`ApiConfigModal.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/ApiConfigModal.tsx)):** Migrated Member ID to official `94515`, displays live `LIVE BSE: 94515` pill with RS256 JWT TTL, roles, latency, and one-click live re-ping (gracefully falling back to Sandbox if offline).
+  * **Scheme & NAV Master ([`SchemeMaster.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/SchemeMaster.tsx)):** 3-tab interface — **Live BSE UAT Schemes (28,128)** with AMC quick-chips, Plan/Option filters, inline Check Live NAV, and Buy Lumpsum/Start XSIP handoff; **Live BSE NAV Master (15,692)** with verified UAT code shortcuts; and **Curated Sandbox Catalog** fallback.
+  * **UCC Registry Status Strip ([`UccManager.tsx`](file:///c:/Users/mrigt/Documents/mrig_new_laptop/mrig/tanashvi/mf-platform_dev/bse-star-mf-integration-terminal/src/components/UccManager.tsx)):** Live `/api/v2/list_ucc` count sync badge for Member `94515`.
 
 ---
 

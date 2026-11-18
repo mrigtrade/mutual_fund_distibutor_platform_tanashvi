@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BseCredentials } from '../types/bse';
 import { BseApiService } from '../services/bseApiService';
+import { fetchLiveBseStatus } from '../services/liveBseUatClient';
 import { X, Server, Key, Shield, CheckCircle, AlertCircle, RefreshCw, Lock } from 'lucide-react';
 
 interface ApiConfigModalProps {
@@ -31,11 +32,31 @@ export const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
     setIsTesting(true);
     setTestResult(null);
     try {
+      if (form.environment === 'uat') {
+        const live = await fetchLiveBseStatus();
+        if (live.authenticated) {
+          setTestResult({
+            success: true,
+            latencyMs: live.latencyMs,
+            message: `LIVE BSE StAR MF v2.0 UAT Authenticated via Oracle Static IP (130.210.57.235) · Member ${live.memberId} (${live.orgType}) · Roles: ${live.roles.join(', ')}`,
+            authToken: `RS256 JWT Verified (TTL: ${Math.round(live.expiresInSec / 60)}m) · ${live.gateway}`
+          });
+          setForm(prev => ({
+            ...prev,
+            memberId: live.memberId,
+            customGatewayUrl: live.gateway,
+            connectionStatus: 'CONNECTED',
+            lastTestedAt: new Date().toISOString()
+          }));
+          return;
+        }
+      }
+
       const res = await BseApiService.testConnection(form);
       setTestResult({
         success: res.success,
         latencyMs: res.latencyMs,
-        message: res.message,
+        message: `${res.message} (Sandbox fallback)`,
         authToken: res.authToken
       });
       if (res.success) {
@@ -97,7 +118,8 @@ export const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
                 onClick={() => setForm(f => ({
                   ...f,
                   environment: 'uat',
-                  customGatewayUrl: 'https://bsestarmfdemo.bseindia.com/StarMFWebAPI/v2'
+                  memberId: '94515',
+                  customGatewayUrl: 'https://starmfv2demo.bseindia.com/api'
                 }))}
                 className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
                   form.environment === 'uat'

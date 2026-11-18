@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClientUcc, BseCredentials, TaxStatus, HoldingNature, ActiveUserSession, SubDistributor } from '../types/bse';
 import { BseApiService } from '../services/bseApiService';
-import { Plus, UserCheck, ShieldCheck, Search, Check, AlertCircle, Building2, User, FileText, ArrowRight } from 'lucide-react';
+import { fetchLiveBseUccList, LiveBseUccListResponse } from '../services/liveBseUatClient';
+import { Plus, UserCheck, ShieldCheck, Search, Check, AlertCircle, Building2, User, FileText, ArrowRight, Radio, RefreshCw } from 'lucide-react';
 
 interface UccManagerProps {
   clients: ClientUcc[];
@@ -27,6 +28,19 @@ export const UccManager: React.FC<UccManagerProps> = ({
   const [filterSubBroker, setFilterSubBroker] = useState<string>('ALL');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [liveUccInfo, setLiveUccInfo] = useState<LiveBseUccListResponse | null>(null);
+  const [isLoadingLiveUcc, setIsLoadingLiveUcc] = useState(false);
+
+  const loadLiveUccStatus = async () => {
+    setIsLoadingLiveUcc(true);
+    const res = await fetchLiveBseUccList();
+    setLiveUccInfo(res);
+    setIsLoadingLiveUcc(false);
+  };
+
+  useEffect(() => {
+    loadLiveUccStatus();
+  }, []);
 
   // New Client Form State
   const [clientCode, setClientCode] = useState(`CL${Math.floor(100000 + Math.random() * 900000)}`);
@@ -162,6 +176,39 @@ export const UccManager: React.FC<UccManagerProps> = ({
             <span>Register New UCC with BSE</span>
           </button>
         </div>
+      </div>
+
+      {/* Live BSE StAR MF v2.0 UAT UCC Registry Status Strip */}
+      <div className="bg-slate-900/90 border border-emerald-500/30 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-start sm:items-center gap-2.5">
+          <Radio className={`w-4 h-4 shrink-0 mt-0.5 sm:mt-0 ${liveUccInfo?.live ? 'text-emerald-400' : 'text-slate-400'}`} />
+          <div>
+            <div className="text-slate-200 font-medium">
+              Live BSE UAT UCC Registry (<span className="font-mono text-emerald-300">POST /api/v2/list_ucc · Member 94515</span>):{' '}
+              {isLoadingLiveUcc ? (
+                <span className="text-amber-300 font-mono">Querying BSE...</span>
+              ) : liveUccInfo?.live ? (
+                <strong className="font-mono text-white">
+                  {liveUccInfo.count} Active UCC{liveUccInfo.count === 1 ? '' : 's'} on BSE UAT ({liveUccInfo.latencyMs}ms)
+                </strong>
+              ) : (
+                <span className="text-slate-400 font-mono">Sandbox Mode</span>
+              )}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-0.5">
+              Demo clients below run in local sandbox mode while BSE enables Branch ID &amp; e-NACH Sponsor Bank for live Member 94515 writes.
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={loadLiveUccStatus}
+          disabled={isLoadingLiveUcc}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md font-medium cursor-pointer shrink-0 self-start sm:self-auto disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoadingLiveUcc ? 'animate-spin' : ''}`} />
+          <span>Sync BSE UAT</span>
+        </button>
       </div>
 
       {/* Search & Filter Controls */}
