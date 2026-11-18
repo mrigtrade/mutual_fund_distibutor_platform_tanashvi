@@ -22,7 +22,7 @@
 | **Phase 9** | MFD Proposal Basket & Investment Cart Link Engine | **COMPLETED** | Verified via `test_phase9_proposal_cart.ts` (Passed) |
 | **Phase 10** | Modern Frontend Web UI & Tanashvi Brand Experience | **COMPLETED** | Verified via Vite build (Lotus logo, theme, calculators, portfolio tax, cart) |
 | **Phase 11** | MF Research & Analytics Engine (AdvisorKhoj Parity) | **COMPLETED** | Verified via `test_phase11_research.ts` (Passed 100%) |
-| **Phase 12** | Live BSE Sandbox Integration (Post Static IP Whitelisting) | **PENDING** | Awaiting BSE Exchange static IP whitelist approval |
+| **Phase 12** | Live BSE Sandbox Integration (Post Static IP Whitelisting) | **IN PROGRESS (LIVE AUTH VERIFIED!)** | **HTTP 200 OK** on `/api/login` (`member/94515/tanashvifintechpvtltd`) & **28,128 live schemes** fetched via `/api/master_scheme_list` from `130.210.57.235` |
 
 ---
 
