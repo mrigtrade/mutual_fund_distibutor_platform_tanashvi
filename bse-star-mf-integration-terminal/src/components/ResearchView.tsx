@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   LineChart,
   BarChart3,
@@ -629,6 +629,15 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
     navDate?: string;
   } | null>(null);
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const focusSearchBox = () => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+      searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   const searchLiveBse = useCallback(async (query: string) => {
     if (!query.trim()) return;
     setIsLoadingLive(true);
@@ -685,6 +694,31 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
   const allSchemesList: SchemeInfo[] = useMemo(
     () => [...customSchemes, ...FLAGSHIP_SCHEMES],
     [customSchemes]
+  );
+
+  const renderSchemeOptions = (schemesToExclude?: string[], includeCode?: string) => (
+    <>
+      {customSchemes.length > 0 && (
+        <optgroup label="Live BSE StAR MF Schemes (Member 94515)">
+          {customSchemes
+            .filter(s => s.code === includeCode || !schemesToExclude || !schemesToExclude.includes(s.code))
+            .map(s => (
+              <option key={s.code} value={s.code} className="bg-slate-900 text-emerald-300 font-medium">
+                [BSE Live] {s.name} ({s.category})
+              </option>
+            ))}
+        </optgroup>
+      )}
+      <optgroup label="Curated Market Benchmark Schemes">
+        {FLAGSHIP_SCHEMES
+          .filter(s => s.code === includeCode || !schemesToExclude || !schemesToExclude.includes(s.code))
+          .map(s => (
+            <option key={s.code} value={s.code} className="bg-slate-900 text-slate-200">
+              {s.name} ({s.category})
+            </option>
+          ))}
+      </optgroup>
+    </>
   );
 
   const handleOrderFromResearch = (orderType: 'LUMPSUM' | 'SIP' | 'STP') => {
@@ -1019,6 +1053,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
               <input
+                ref={searchInputRef}
                 type="text"
                 value={liveSearchQuery}
                 onChange={(e) => setLiveSearchQuery(e.target.value)}
@@ -1221,34 +1256,73 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
       {activeSubTab === 'rolling' && (
         <div className="space-y-6">
           {/* Controls: Fund Selector & Horizon */}
-          <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="w-full md:w-1/2">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                Select Mutual Fund Scheme
-              </label>
-              <select
-                value={selectedScheme}
-                onChange={(e) => setSelectedScheme(e.target.value)}
-                className="w-full bg-[#0b0f19] border border-slate-700 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-[#c5a059]"
-              >
-                {allSchemesList.map((s) => (
-                  <option key={s.code} value={s.code}>
-                    {s.name} ({s.category})
-                  </option>
-                ))}
-              </select>
+          <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Scheme Under Active Rolling Analysis:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={focusSearchBox}
+                  className="text-xs text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                  title="Search any of 28,128 live schemes on BSE"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span>Search Different Fund on BSE</span>
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-baseline gap-2">
+                <div className="text-base font-bold text-white tracking-tight truncate max-w-xl" title={researchProfiles[selectedScheme]?.name}>
+                  {researchProfiles[selectedScheme]?.name || 'Select Scheme'}
+                </div>
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 font-semibold">
+                  BSE: {researchProfiles[selectedScheme]?.bseCode || researchProfiles[selectedScheme]?.code}
+                </span>
+                <span className="text-xs text-[#c5a059] font-medium">
+                  {researchProfiles[selectedScheme]?.category}
+                </span>
+              </div>
+
+              {customSchemes.length > 1 && (
+                <div className="flex items-center gap-2 pt-1 overflow-x-auto text-xs">
+                  <span className="text-[11px] text-slate-400 shrink-0 font-medium">Recently Searched BSE Schemes:</span>
+                  <div className="flex items-center gap-1.5 flex-nowrap">
+                    {customSchemes.map((s) => (
+                      <button
+                        key={s.code}
+                        type="button"
+                        onClick={() => {
+                          setSelectedScheme(s.code);
+                          setRiskScheme(s.code);
+                        }}
+                        className={`px-2 py-0.5 rounded text-[11px] font-mono transition-colors whitespace-nowrap cursor-pointer ${
+                          selectedScheme === s.code
+                            ? 'bg-amber-400 text-slate-950 font-bold'
+                            : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700'
+                        }`}
+                        title={s.name}
+                      >
+                        {s.code} ({s.name.slice(0, 18)}...)
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div>
+            <div className="shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-800">
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                Investment Horizon
+                Rolling Return Horizon
               </label>
               <div className="flex gap-2">
                 {([1, 3, 5, 7] as const).map((yr) => (
                   <button
                     key={yr}
                     onClick={() => setHorizonYears(yr)}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       horizonYears === yr
                         ? 'bg-[#c5a059] text-slate-950 font-bold shadow-md'
                         : 'bg-[#0b0f19] border border-slate-700 text-slate-300 hover:border-slate-500'
@@ -1380,24 +1454,64 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
       {/* ========================================================================= */}
       {activeSubTab === 'risk' && (
         <div className="space-y-6">
-          <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="w-full md:w-1/2">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                Select Scheme to Analyze Risk Ratios
-              </label>
-              <select
-                value={riskScheme}
-                onChange={(e) => setRiskScheme(e.target.value)}
-                className="w-full bg-[#0b0f19] border border-slate-700 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-[#c5a059]"
-              >
-                {allSchemesList.map((s) => (
-                  <option key={s.code} value={s.code}>
-                    {s.name} ({s.category})
-                  </option>
-                ))}
-              </select>
+          <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Scheme Under Active Risk Analysis:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={focusSearchBox}
+                  className="text-xs text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                  title="Search any of 28,128 live schemes on BSE"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span>Search Different Fund on BSE</span>
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-baseline gap-2">
+                <div className="text-base font-bold text-white tracking-tight truncate max-w-xl" title={researchProfiles[selectedScheme]?.name}>
+                  {researchProfiles[selectedScheme]?.name || 'Select Scheme'}
+                </div>
+                <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 font-semibold">
+                  BSE: {researchProfiles[selectedScheme]?.bseCode || researchProfiles[selectedScheme]?.code}
+                </span>
+                <span className="text-xs text-[#c5a059] font-medium">
+                  {researchProfiles[selectedScheme]?.category}
+                </span>
+              </div>
+
+              {customSchemes.length > 1 && (
+                <div className="flex items-center gap-2 pt-1 overflow-x-auto text-xs">
+                  <span className="text-[11px] text-slate-400 shrink-0 font-medium">Recently Searched BSE Schemes:</span>
+                  <div className="flex items-center gap-1.5 flex-nowrap">
+                    {customSchemes.map((s) => (
+                      <button
+                        key={s.code}
+                        type="button"
+                        onClick={() => {
+                          setSelectedScheme(s.code);
+                          setRiskScheme(s.code);
+                        }}
+                        className={`px-2 py-0.5 rounded text-[11px] font-mono transition-colors whitespace-nowrap cursor-pointer ${
+                          selectedScheme === s.code
+                            ? 'bg-amber-400 text-slate-950 font-bold'
+                            : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700'
+                        }`}
+                        title={s.name}
+                      >
+                        {s.code} ({s.name.slice(0, 18)}...)
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="text-xs text-slate-400 text-right">
+
+            <div className="text-xs text-slate-400 lg:text-right shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-800 space-y-0.5">
               <div>Benchmark: <span className="text-slate-200 font-semibold">NIFTY 50 TRI</span></div>
               <div>Risk-Free Rate: <span className="text-slate-200 font-semibold">6.50% (RBI 91-Day T-Bill)</span></div>
               <div>Horizon: <span className="text-[#c5a059] font-semibold">3 Years (784 Trading Days)</span></div>
@@ -1525,11 +1639,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                   <option value="">
                     {comparedSchemes.length >= 5 ? 'Max 5 Funds Reached' : '+ Choose Fund to Add...'}
                   </option>
-                  {allSchemesList.filter(s => !comparedSchemes.includes(s.code)).map((s) => (
-                    <option key={s.code} value={s.code} className="bg-slate-900 text-slate-200">
-                      {s.name} ({s.category})
-                    </option>
-                  ))}
+                  {renderSchemeOptions(comparedSchemes)}
                 </select>
               </div>
             </div>
@@ -1641,11 +1751,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                             <option value={code} disabled>
                               Swap fund...
                             </option>
-                            {allSchemesList.filter(s => s.code === code || !comparedSchemes.includes(s.code)).map((s) => (
-                              <option key={s.code} value={s.code} className="bg-slate-900 text-slate-200">
-                                {s.name} ({s.category})
-                              </option>
-                            ))}
+                            {renderSchemeOptions(comparedSchemes, code)}
                           </select>
                         </div>
                       </th>
@@ -1664,11 +1770,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                           className="w-full bg-[#0b0f19] border border-slate-700 rounded px-2 py-1 text-[11px] text-[#c5a059] focus:outline-hidden cursor-pointer"
                         >
                           <option value="">+ Choose Scheme</option>
-                          {allSchemesList.filter(s => !comparedSchemes.includes(s.code)).map((s) => (
-                            <option key={s.code} value={s.code} className="bg-slate-900 text-slate-200">
-                              {s.name}
-                            </option>
-                          ))}
+                          {renderSchemeOptions(comparedSchemes)}
                         </select>
                       </div>
                     </th>
@@ -1925,11 +2027,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                 onChange={(e) => setOverlapSchemeA(e.target.value)}
                 className="w-full bg-[#0b0f19] border border-slate-700 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-[#c5a059]"
               >
-                {allSchemesList.map((s) => (
-                  <option key={s.code} value={s.code}>
-                    {s.name} ({s.category})
-                  </option>
-                ))}
+                {renderSchemeOptions()}
               </select>
             </div>
 
@@ -1942,11 +2040,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                 onChange={(e) => setOverlapSchemeB(e.target.value)}
                 className="w-full bg-[#0b0f19] border border-slate-700 rounded-lg px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-[#c5a059]"
               >
-                {allSchemesList.map((s) => (
-                  <option key={s.code} value={s.code}>
-                    {s.name} ({s.category})
-                  </option>
-                ))}
+                {renderSchemeOptions()}
               </select>
             </div>
           </div>
