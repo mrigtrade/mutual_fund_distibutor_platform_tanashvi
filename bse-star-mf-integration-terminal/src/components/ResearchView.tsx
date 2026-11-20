@@ -27,7 +27,8 @@ import {
   Building2,
   ExternalLink,
   ShieldCheck,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle
 } from 'lucide-react';
 import { exportToCsv, exportToExcelXls, exportReportToPdf } from '../utils/exportUtils';
 import { Scheme } from '../types/bse';
@@ -39,6 +40,19 @@ import {
   fetchLiveBseNavs,
   liveBseSchemeToAppScheme
 } from '../services/liveBseUatClient';
+import {
+  AssetClassCategory,
+  RollingHorizon,
+  RollingReturnMetrics,
+  ReturnDistributionBuckets,
+  detectAssetClass,
+  getAssetClassDisplay,
+  getRollingMetricsForAssetClass,
+  getMultiHorizonRollingData,
+  getRiskMetricsForAssetClass,
+  getTrailingReturnsForAssetClass,
+  getHoldingsForAssetClass
+} from '../utils/researchAnalytics';
 
 interface SchemeInfo {
   code: string;
@@ -61,7 +75,9 @@ const FLAGSHIP_SCHEMES: SchemeInfo[] = [
   { code: '145110', name: 'Tata Small Cap Fund - Regular Plan - Growth', category: 'Small Cap Fund', amc: 'Tata Mutual Fund' },
   { code: '118989', name: 'ICICI Prudential Value Discovery Fund - Regular Plan - Growth', category: 'Value Fund', amc: 'ICICI Prudential Mutual Fund' },
   { code: '103303', name: 'ICICI Prudential Balanced Advantage Fund - Regular Plan - Growth', category: 'Hybrid BAF', amc: 'ICICI Prudential Mutual Fund' },
-  { code: '145210', name: 'UTI Nifty 50 Index Fund - Regular Plan - Growth', category: 'Index Fund', amc: 'UTI Mutual Fund' }
+  { code: '145210', name: 'UTI Nifty 50 Index Fund - Regular Plan - Growth', category: 'Index Fund', amc: 'UTI Mutual Fund' },
+  { code: '101979', name: 'Kotak Credit Risk Fund - Regular Plan - Growth', category: 'Credit Risk Debt Fund', amc: 'Kotak Mahindra Mutual Fund' },
+  { code: '100377', name: 'HDFC Liquid Fund - Regular Plan - Growth', category: 'Liquid Debt Fund', amc: 'HDFC Mutual Fund' }
 ];
 
 export interface ResearchViewProps {
@@ -87,81 +103,63 @@ function buildResearchProfileFromBse(
   liveNav?: number,
   navDate?: string
 ): any {
-  const cat = (rec.category || '').toLowerCase();
-  const isSmall = cat.includes('small');
-  const isMid = cat.includes('mid');
-  const isDebt = cat.includes('debt') || cat.includes('liquid') || cat.includes('money market');
-  const isHybrid = cat.includes('hybrid') || cat.includes('balanced');
+  const assetClass = detectAssetClass(rec.name, rec.category);
+  const isDebtOrLiquid = assetClass === 'DEBT' || assetClass === 'OVERNIGHT_LIQUID' || assetClass === 'ARBITRAGE';
+  const navVal = liveNav !== undefined ? liveNav : (isDebtOrLiquid ? 104.25 : 42.50);
 
-  const navVal = liveNav !== undefined ? liveNav : 42.5;
+  // Micro-adjustment seed from BSE scheme code digits for realistic slight variations
+  const codeNum = parseInt(rec.bseCode.replace(/\D/g, '') || '100', 10);
+  const fundModifier = ((codeNum % 10) - 5) / 10; // between -0.5 and +0.4
 
-  let y1 = 24.5, y3 = 19.8, y5 = 21.2, avgRolling = 26.5;
-  let sd = 14.2, sharpe = 1.15, beta = 0.88, alpha = 4.2, sortino = 1.9, r2 = 0.85;
-  let dist = { neg: 0.0, zeroToEight: 0.8, eightToTwelve: 4.5, twelveToFifteen: 14.2, aboveFifteen: 80.5 };
+  const multiRolling = getMultiHorizonRollingData(assetClass, fundModifier);
+  const risk = getRiskMetricsForAssetClass(assetClass);
+  const returns = getTrailingReturnsForAssetClass(assetClass);
+  const holdings = getHoldingsForAssetClass(assetClass);
 
-  if (isSmall) {
-    y1 = 34.2; y3 = 26.8; y5 = 28.9; avgRolling = 35.8;
-    sd = 18.5; sharpe = 1.35; beta = 0.92; alpha = 8.6; sortino = 2.3; r2 = 0.72;
-    dist = { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 0.5, twelveToFifteen: 2.5, aboveFifteen: 97.0 };
-  } else if (isMid) {
-    y1 = 31.4; y3 = 24.2; y5 = 25.6; avgRolling = 31.2;
-    sd = 16.2; sharpe = 1.28; beta = 0.89; alpha = 6.8; sortino = 2.1; r2 = 0.79;
-    dist = { neg: 0.0, zeroToEight: 0.2, eightToTwelve: 1.8, twelveToFifteen: 8.5, aboveFifteen: 89.5 };
-  } else if (isDebt) {
-    y1 = 7.4; y3 = 7.1; y5 = 6.9; avgRolling = 7.2;
-    sd = 2.1; sharpe = 0.45; beta = 0.06; alpha = 0.8; sortino = 2.8; r2 = 0.12;
-    dist = { neg: 0.0, zeroToEight: 82.5, eightToTwelve: 17.5, twelveToFifteen: 0.0, aboveFifteen: 0.0 };
-  } else if (isHybrid) {
-    y1 = 18.5; y3 = 14.8; y5 = 15.6; avgRolling = 17.5;
-    sd = 9.8; sharpe = 1.12; beta = 0.62; alpha = 3.6; sortino = 2.15; r2 = 0.88;
-    dist = { neg: 0.0, zeroToEight: 2.1, eightToTwelve: 12.8, twelveToFifteen: 32.1, aboveFifteen: 53.0 };
+  let aum = '₹38,500 Cr';
+  let ter = '1.42%';
+  if (assetClass === 'OVERNIGHT_LIQUID') {
+    aum = '₹54,200 Cr';
+    ter = '0.22%';
+  } else if (assetClass === 'DEBT') {
+    aum = '₹18,400 Cr';
+    ter = '0.78%';
+  } else if (assetClass === 'ARBITRAGE') {
+    aum = '₹14,200 Cr';
+    ter = '0.35%';
+  } else if (assetClass === 'SMALL_CAP') {
+    aum = '₹28,600 Cr';
+    ter = '1.58%';
+  } else if (assetClass === 'MID_CAP') {
+    aum = '₹32,400 Cr';
+    ter = '1.52%';
   }
+
+  const categoryLabel = rec.category && rec.category !== 'Not Specified'
+    ? rec.category
+    : getAssetClassDisplay(assetClass).label;
 
   return {
     code: rec.bseCode,
     name: rec.name,
-    category: rec.category,
+    category: categoryLabel,
+    assetClass,
     amc: rec.amcName,
     isin: rec.isin,
     bseCode: rec.bseCode,
     rtaName: rec.rtaName,
     isLiveBse: true,
-    aum: isDebt ? '₹24,800 Cr' : '₹38,500 Cr',
-    ter: isDebt ? '0.28%' : '1.42%',
-    manager: `${rec.amcName.split(' ')[0]} Portfolio Management Team`,
+    aum,
+    ter,
+    manager: `${rec.amcName.split(' ')[0]} Investment Team`,
     inception: '01-Jan-2015',
     liveNav: navVal,
     liveNavDate: navDate || 'Latest BSE Feed',
-    returns: { m1: 1.45, m3: 3.85, m6: 10.2, y1, y3, y5, inception: 17.4 },
-    risk: { sd, sharpe, beta, alpha, sortino, r2 },
-    rolling3Y: {
-      avg: avgRolling,
-      median: Number((avgRolling + 0.6).toFixed(2)),
-      min: avgRolling > 20 ? 8.4 : 5.8,
-      max: avgRolling > 20 ? 46.5 : 9.8,
-      benchmarkAvg: 26.89,
-      benchmarkMin: 9.55,
-      benchmarkMax: 44.79,
-      dist
-    },
-    holdings: isDebt
-      ? [
-          { name: 'Government of India 7.18% 2033 (G-Sec)', sector: 'Sovereign Debt', weight: 18.5 },
-          { name: 'TREPS / Reverse Repo Overnight', sector: 'Cash & Overnight', weight: 16.2 },
-          { name: 'HDFC Bank Ltd. CD', sector: 'Money Market', weight: 9.8 },
-          { name: 'NABARD Commercial Paper', sector: 'Financial Services', weight: 8.5 },
-          { name: 'REC Ltd. AAA Bonds', sector: 'Financial Services', weight: 7.4 }
-        ]
-      : [
-          { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 8.9 },
-          { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 7.8 },
-          { name: 'Reliance Industries Ltd.', sector: 'Oil & Gas', weight: 6.9 },
-          { name: 'Infosys Ltd.', sector: 'Technology', weight: 5.8 },
-          { name: 'Larsen & Toubro Ltd.', sector: 'Construction', weight: 5.1 },
-          { name: 'ITC Ltd.', sector: 'FMCG', weight: 4.8 },
-          { name: 'Tata Consultancy Services Ltd.', sector: 'Technology', weight: 4.2 },
-          { name: 'Bharti Airtel Ltd.', sector: 'Telecommunication', weight: 3.9 }
-        ]
+    returns,
+    risk,
+    rolling: multiRolling,
+    rolling3Y: multiRolling[3],
+    holdings
   };
 }
 
@@ -171,23 +169,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '122639',
       name: 'Parag Parikh Flexi Cap Fund - Growth',
       category: 'Flexi Cap Fund',
+      assetClass: 'FLEXI_CAP',
       amc: 'PPFAS Mutual Fund',
       aum: '₹68,450 Cr',
       ter: '1.32%',
       manager: 'Rajeev Thakkar, Raunak Onkar',
       inception: '28-May-2013',
       returns: { m1: 1.85, m3: 4.20, m6: 11.45, y1: 28.60, y3: 20.40, y5: 23.85, inception: 19.65 },
-      risk: { sd: 13.36, sharpe: 1.89, beta: 0.76, alpha: 5.10, sortino: 3.03, r2: 0.77 },
-      rolling3Y: {
-        avg: 27.31,
-        median: 29.05,
-        min: 8.97,
-        max: 41.60,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 2.9, twelveToFifteen: 10.1, aboveFifteen: 87.1 }
-      },
+      risk: { sd: 13.36, sharpe: 1.89, beta: 0.76, alpha: 5.10, sortino: 3.03, r2: 0.77, benchmarkName: 'NIFTY 500 TRI', benchmarkSd: 15.65 },
+      rolling: getMultiHorizonRollingData('FLEXI_CAP', 0.8),
+      rolling3Y: getRollingMetricsForAssetClass('FLEXI_CAP', 3, 0.8),
       holdings: [
         { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 8.45 },
         { name: 'Bajaj Holdings & Investment Ltd.', sector: 'Financial Services', weight: 7.82 },
@@ -203,23 +194,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '119551',
       name: 'HDFC Top 100 Fund - Growth',
       category: 'Large Cap Fund',
+      assetClass: 'LARGE_CAP',
       amc: 'HDFC Mutual Fund',
       aum: '₹34,120 Cr',
       ter: '1.65%',
       manager: 'Rahul Baijal',
       inception: '03-Sep-1996',
       returns: { m1: 1.10, m3: 3.15, m6: 8.90, y1: 22.40, y3: 16.80, y5: 18.25, inception: 18.90 },
-      risk: { sd: 14.50, sharpe: 0.88, beta: 0.98, alpha: 2.15, sortino: 1.45, r2: 0.92 },
-      rolling3Y: {
-        avg: 24.10,
-        median: 24.80,
-        min: 7.20,
-        max: 38.50,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 2.1, eightToTwelve: 8.4, twelveToFifteen: 18.5, aboveFifteen: 71.0 }
-      },
+      risk: { sd: 14.50, sharpe: 0.88, beta: 0.98, alpha: 2.15, sortino: 1.45, r2: 0.92, benchmarkName: 'NIFTY 50 TRI', benchmarkSd: 15.33 },
+      rolling: getMultiHorizonRollingData('LARGE_CAP', 0.2),
+      rolling3Y: getRollingMetricsForAssetClass('LARGE_CAP', 3, 0.2),
       holdings: [
         { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 9.85 },
         { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 8.60 },
@@ -235,23 +219,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '120503',
       name: 'Nippon India Small Cap Fund - Growth',
       category: 'Small Cap Fund',
+      assetClass: 'SMALL_CAP',
       amc: 'Nippon India Mutual Fund',
       aum: '₹55,900 Cr',
       ter: '1.48%',
       manager: 'Samir Rachh, Kinjal Desai',
       inception: '16-Sep-2010',
       returns: { m1: 2.45, m3: 5.80, m6: 15.20, y1: 34.50, y3: 26.20, y5: 29.80, inception: 21.40 },
-      risk: { sd: 18.90, sharpe: 1.34, beta: 0.92, alpha: 8.90, sortino: 2.25, r2: 0.68 },
-      rolling3Y: {
-        avg: 36.29,
-        median: 37.10,
-        min: 14.50,
-        max: 56.80,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 0.0, twelveToFifteen: 1.2, aboveFifteen: 98.8 }
-      },
+      risk: { sd: 18.90, sharpe: 1.34, beta: 0.92, alpha: 8.90, sortino: 2.25, r2: 0.68, benchmarkName: 'NIFTY Smallcap 250 TRI', benchmarkSd: 20.40 },
+      rolling: getMultiHorizonRollingData('SMALL_CAP', 1.2),
+      rolling3Y: getRollingMetricsForAssetClass('SMALL_CAP', 3, 1.2),
       holdings: [
         { name: 'Tube Investments of India Ltd.', sector: 'Automobile', weight: 3.20 },
         { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 2.85 },
@@ -265,23 +242,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '100033',
       name: 'SBI Bluechip Fund - Growth',
       category: 'Large Cap Fund',
+      assetClass: 'LARGE_CAP',
       amc: 'SBI Mutual Fund',
       aum: '₹48,200 Cr',
       ter: '1.58%',
       manager: 'Sohini Andani',
       inception: '14-Feb-2006',
       returns: { m1: 0.95, m3: 2.80, m6: 7.60, y1: 19.80, y3: 15.20, y5: 16.90, inception: 14.80 },
-      risk: { sd: 13.90, sharpe: 0.82, beta: 0.94, alpha: 1.45, sortino: 1.32, r2: 0.94 },
-      rolling3Y: {
-        avg: 22.80,
-        median: 23.40,
-        min: 6.80,
-        max: 36.40,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 3.5, eightToTwelve: 11.2, twelveToFifteen: 22.3, aboveFifteen: 63.0 }
-      },
+      risk: { sd: 13.90, sharpe: 0.82, beta: 0.94, alpha: 1.45, sortino: 1.32, r2: 0.94, benchmarkName: 'NIFTY 50 TRI', benchmarkSd: 15.33 },
+      rolling: getMultiHorizonRollingData('LARGE_CAP', -0.2),
+      rolling3Y: getRollingMetricsForAssetClass('LARGE_CAP', 3, -0.2),
       holdings: [
         { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 9.10 },
         { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 7.80 },
@@ -295,23 +265,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '118989',
       name: 'ICICI Prudential Value Discovery Fund - Growth',
       category: 'Value Fund',
+      assetClass: 'FLEXI_CAP',
       amc: 'ICICI Prudential Mutual Fund',
       aum: '₹42,100 Cr',
       ter: '1.54%',
       manager: 'Sankaran Naren, Dharmesh Kakkad',
       inception: '16-Aug-2004',
       returns: { m1: 1.40, m3: 3.90, m6: 10.80, y1: 26.40, y3: 21.10, y5: 22.40, inception: 19.10 },
-      risk: { sd: 15.10, sharpe: 1.15, beta: 0.86, alpha: 5.20, sortino: 1.88, r2: 0.84 },
-      rolling3Y: {
-        avg: 28.40,
-        median: 28.90,
-        min: 9.10,
-        max: 43.80,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 1.0, eightToTwelve: 5.2, twelveToFifteen: 14.8, aboveFifteen: 79.0 }
-      },
+      risk: { sd: 15.10, sharpe: 1.15, beta: 0.86, alpha: 5.20, sortino: 1.88, r2: 0.84, benchmarkName: 'NIFTY 500 TRI', benchmarkSd: 15.65 },
+      rolling: getMultiHorizonRollingData('FLEXI_CAP', 0.5),
+      rolling3Y: getRollingMetricsForAssetClass('FLEXI_CAP', 3, 0.5),
       holdings: [
         { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 8.75 },
         { name: 'NTPC Ltd.', sector: 'Power & Energy', weight: 7.40 },
@@ -324,23 +287,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '108466',
       name: 'ICICI Prudential Bluechip Fund - Growth',
       category: 'Large Cap Fund',
+      assetClass: 'LARGE_CAP',
       amc: 'ICICI Prudential Mutual Fund',
       aum: '₹58,400 Cr',
       ter: '1.45%',
       manager: 'Anish Tawakley, Vaibhav Dusad',
       inception: '23-May-2008',
       returns: { m1: 1.15, m3: 3.40, m6: 9.20, y1: 24.20, y3: 18.20, y5: 19.10, inception: 16.40 },
-      risk: { sd: 13.80, sharpe: 0.95, beta: 0.95, alpha: 2.40, sortino: 1.55, r2: 0.94 },
-      rolling3Y: {
-        avg: 24.80,
-        median: 25.10,
-        min: 7.90,
-        max: 39.20,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 1.5, eightToTwelve: 7.8, twelveToFifteen: 16.4, aboveFifteen: 74.3 }
-      },
+      risk: { sd: 13.80, sharpe: 0.95, beta: 0.95, alpha: 2.40, sortino: 1.55, r2: 0.94, benchmarkName: 'NIFTY 50 TRI', benchmarkSd: 15.33 },
+      rolling: getMultiHorizonRollingData('LARGE_CAP', 0.3),
+      rolling3Y: getRollingMetricsForAssetClass('LARGE_CAP', 3, 0.3),
       holdings: [
         { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 9.40 },
         { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 8.90 },
@@ -354,23 +310,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '101967',
       name: 'Kotak Flexicap Fund - Growth',
       category: 'Flexi Cap Fund',
+      assetClass: 'FLEXI_CAP',
       amc: 'Kotak Mahindra Mutual Fund',
       aum: '₹49,800 Cr',
       ter: '1.48%',
       manager: 'Harsha Upadhyaya',
       inception: '11-Sep-2009',
       returns: { m1: 1.30, m3: 3.80, m6: 10.40, y1: 25.80, y3: 19.40, y5: 20.20, inception: 15.80 },
-      risk: { sd: 13.90, sharpe: 1.05, beta: 0.92, alpha: 3.10, sortino: 1.68, r2: 0.91 },
-      rolling3Y: {
-        avg: 25.40,
-        median: 26.10,
-        min: 8.20,
-        max: 40.50,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 0.8, eightToTwelve: 6.5, twelveToFifteen: 15.2, aboveFifteen: 77.5 }
-      },
+      risk: { sd: 13.90, sharpe: 1.05, beta: 0.92, alpha: 3.10, sortino: 1.68, r2: 0.91, benchmarkName: 'NIFTY 500 TRI', benchmarkSd: 15.65 },
+      rolling: getMultiHorizonRollingData('FLEXI_CAP', 0.3),
+      rolling3Y: getRollingMetricsForAssetClass('FLEXI_CAP', 3, 0.3),
       holdings: [
         { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 8.80 },
         { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 7.40 },
@@ -384,23 +333,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '142890',
       name: 'Quant Active Fund - Growth',
       category: 'Multi Cap Fund',
+      assetClass: 'FLEXI_CAP',
       amc: 'Quant Mutual Fund',
       aum: '₹12,400 Cr',
       ter: '1.65%',
       manager: 'Sandeep Tandon, Ankit Pande',
       inception: '15-Mar-2001',
       returns: { m1: 2.80, m3: 6.20, m6: 16.80, y1: 38.60, y3: 28.50, y5: 30.10, inception: 20.50 },
-      risk: { sd: 17.80, sharpe: 1.42, beta: 1.08, alpha: 9.80, sortino: 2.45, r2: 0.74 },
-      rolling3Y: {
-        avg: 34.80,
-        median: 35.60,
-        min: 12.40,
-        max: 54.20,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 0.5, twelveToFifteen: 3.2, aboveFifteen: 96.3 }
-      },
+      risk: { sd: 17.80, sharpe: 1.42, beta: 1.08, alpha: 9.80, sortino: 2.45, r2: 0.74, benchmarkName: 'NIFTY 500 TRI', benchmarkSd: 15.65 },
+      rolling: getMultiHorizonRollingData('FLEXI_CAP', 1.5),
+      rolling3Y: getRollingMetricsForAssetClass('FLEXI_CAP', 3, 1.5),
       holdings: [
         { name: 'Reliance Industries Ltd.', sector: 'Oil & Gas', weight: 8.90 },
         { name: 'Jio Financial Services Ltd.', sector: 'Financial Services', weight: 6.80 },
@@ -414,23 +356,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '135782',
       name: 'Mirae Asset Large & Midcap Fund - Growth',
       category: 'Large & Mid Cap Fund',
+      assetClass: 'MID_CAP',
       amc: 'Mirae Asset Mutual Fund',
       aum: '₹41,200 Cr',
       ter: '1.42%',
       manager: 'Neelesh Surana, Ankit Jain',
       inception: '09-Jul-2010',
       returns: { m1: 1.65, m3: 4.50, m6: 12.10, y1: 29.30, y3: 22.10, y5: 21.60, inception: 18.20 },
-      risk: { sd: 14.80, sharpe: 1.22, beta: 0.94, alpha: 4.80, sortino: 1.95, r2: 0.88 },
-      rolling3Y: {
-        avg: 29.10,
-        median: 29.80,
-        min: 9.80,
-        max: 45.10,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 2.8, twelveToFifteen: 11.4, aboveFifteen: 85.8 }
-      },
+      risk: { sd: 14.80, sharpe: 1.22, beta: 0.94, alpha: 4.80, sortino: 1.95, r2: 0.88, benchmarkName: 'NIFTY Midcap 150 TRI', benchmarkSd: 17.80 },
+      rolling: getMultiHorizonRollingData('MID_CAP', 0.4),
+      rolling3Y: getRollingMetricsForAssetClass('MID_CAP', 3, 0.4),
       holdings: [
         { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 7.80 },
         { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 6.90 },
@@ -444,23 +379,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '105758',
       name: 'HDFC Mid-Cap Opportunities Fund - Growth',
       category: 'Mid Cap Fund',
+      assetClass: 'MID_CAP',
       amc: 'HDFC Mutual Fund',
       aum: '₹72,400 Cr',
       ter: '1.44%',
       manager: 'Chirag Setalvad',
       inception: '25-Jun-2007',
       returns: { m1: 2.10, m3: 5.20, m6: 14.80, y1: 36.80, y3: 27.40, y5: 26.50, inception: 19.80 },
-      risk: { sd: 15.60, sharpe: 1.35, beta: 0.88, alpha: 7.20, sortino: 2.20, r2: 0.82 },
-      rolling3Y: {
-        avg: 33.20,
-        median: 34.00,
-        min: 11.80,
-        max: 51.40,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 1.2, twelveToFifteen: 6.5, aboveFifteen: 92.3 }
-      },
+      risk: { sd: 15.60, sharpe: 1.35, beta: 0.88, alpha: 7.20, sortino: 2.20, r2: 0.82, benchmarkName: 'NIFTY Midcap 150 TRI', benchmarkSd: 17.80 },
+      rolling: getMultiHorizonRollingData('MID_CAP', 0.8),
+      rolling3Y: getRollingMetricsForAssetClass('MID_CAP', 3, 0.8),
       holdings: [
         { name: 'Indian Hotels Company Ltd.', sector: 'Services', weight: 4.80 },
         { name: 'Tata Communications Ltd.', sector: 'Telecommunication', weight: 4.20 },
@@ -474,23 +402,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '127042',
       name: 'Motilal Oswal Midcap Fund - Growth',
       category: 'Mid Cap Fund',
+      assetClass: 'MID_CAP',
       amc: 'Motilal Oswal Mutual Fund',
       aum: '₹18,900 Cr',
       ter: '1.58%',
       manager: 'Niket Shah',
       inception: '24-Feb-2014',
       returns: { m1: 2.60, m3: 6.10, m6: 17.50, y1: 42.50, y3: 32.10, y5: 28.90, inception: 21.20 },
-      risk: { sd: 17.20, sharpe: 1.54, beta: 0.90, alpha: 10.40, sortino: 2.60, r2: 0.78 },
-      rolling3Y: {
-        avg: 37.50,
-        median: 38.20,
-        min: 13.50,
-        max: 58.20,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 0.0, twelveToFifteen: 2.1, aboveFifteen: 97.9 }
-      },
+      risk: { sd: 17.20, sharpe: 1.54, beta: 0.90, alpha: 10.40, sortino: 2.60, r2: 0.78, benchmarkName: 'NIFTY Midcap 150 TRI', benchmarkSd: 17.80 },
+      rolling: getMultiHorizonRollingData('MID_CAP', 1.2),
+      rolling3Y: getRollingMetricsForAssetClass('MID_CAP', 3, 1.2),
       holdings: [
         { name: 'Jio Financial Services Ltd.', sector: 'Financial Services', weight: 7.20 },
         { name: 'Persistent Systems Ltd.', sector: 'Technology', weight: 6.40 },
@@ -504,23 +425,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '145110',
       name: 'Tata Small Cap Fund - Growth',
       category: 'Small Cap Fund',
+      assetClass: 'SMALL_CAP',
       amc: 'Tata Mutual Fund',
       aum: '₹9,800 Cr',
       ter: '1.52%',
       manager: 'Chandraprakash Padiyar',
       inception: '12-Nov-2018',
       returns: { m1: 2.40, m3: 5.60, m6: 15.10, y1: 38.90, y3: 28.40, y5: 29.10, inception: 23.40 },
-      risk: { sd: 17.40, sharpe: 1.38, beta: 0.85, alpha: 9.20, sortino: 2.35, r2: 0.72 },
-      rolling3Y: {
-        avg: 35.10,
-        median: 35.80,
-        min: 12.80,
-        max: 53.90,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 0.0, twelveToFifteen: 2.5, aboveFifteen: 97.5 }
-      },
+      risk: { sd: 17.40, sharpe: 1.38, beta: 0.85, alpha: 9.20, sortino: 2.35, r2: 0.72, benchmarkName: 'NIFTY Smallcap 250 TRI', benchmarkSd: 20.40 },
+      rolling: getMultiHorizonRollingData('SMALL_CAP', 0.9),
+      rolling3Y: getRollingMetricsForAssetClass('SMALL_CAP', 3, 0.9),
       holdings: [
         { name: 'Quess Corp Ltd.', sector: 'Services', weight: 3.80 },
         { name: 'IDFC Ltd.', sector: 'Financial Services', weight: 3.40 },
@@ -534,23 +448,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '103303',
       name: 'ICICI Prudential Balanced Advantage Fund - Growth',
       category: 'Hybrid BAF',
+      assetClass: 'HYBRID',
       amc: 'ICICI Prudential Mutual Fund',
       aum: '₹62,100 Cr',
       ter: '1.55%',
       manager: 'Sankaran Naren, Rajat Chandak',
       inception: '30-Dec-2006',
       returns: { m1: 0.85, m3: 2.50, m6: 7.20, y1: 18.20, y3: 14.80, y5: 15.20, inception: 13.90 },
-      risk: { sd: 9.40, sharpe: 1.12, beta: 0.58, alpha: 3.40, sortino: 2.10, r2: 0.89 },
-      rolling3Y: {
-        avg: 17.80,
-        median: 18.20,
-        min: 6.40,
-        max: 27.50,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 2.4, eightToTwelve: 14.2, twelveToFifteen: 32.5, aboveFifteen: 50.9 }
-      },
+      risk: { sd: 9.40, sharpe: 1.12, beta: 0.58, alpha: 3.40, sortino: 2.10, r2: 0.89, benchmarkName: 'NIFTY 50 Hybrid Debt 50:50 Index', benchmarkSd: 9.85 },
+      rolling: getMultiHorizonRollingData('HYBRID', 0.2),
+      rolling3Y: getRollingMetricsForAssetClass('HYBRID', 3, 0.2),
       holdings: [
         { name: 'ICICI Bank Ltd.', sector: 'Financial Services', weight: 6.80 },
         { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 5.90 },
@@ -564,23 +471,16 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
       code: '145210',
       name: 'UTI Nifty 50 Index Fund - Growth',
       category: 'Index Fund',
+      assetClass: 'LARGE_CAP',
       amc: 'UTI Mutual Fund',
       aum: '₹18,400 Cr',
       ter: '0.28%',
       manager: 'Sharwan Kumar Goyal',
       inception: '06-Mar-2000',
       returns: { m1: 1.20, m3: 3.60, m6: 9.40, y1: 24.50, y3: 17.20, y5: 18.10, inception: 14.90 },
-      risk: { sd: 15.20, sharpe: 0.85, beta: 1.00, alpha: -0.28, sortino: 1.38, r2: 1.00 },
-      rolling3Y: {
-        avg: 26.89,
-        median: 26.48,
-        min: 9.55,
-        max: 44.79,
-        benchmarkAvg: 26.89,
-        benchmarkMin: 9.55,
-        benchmarkMax: 44.79,
-        dist: { neg: 0.0, zeroToEight: 0.0, eightToTwelve: 5.8, twelveToFifteen: 18.2, aboveFifteen: 76.0 }
-      },
+      risk: { sd: 15.20, sharpe: 0.85, beta: 1.00, alpha: -0.28, sortino: 1.38, r2: 1.00, benchmarkName: 'NIFTY 50 TRI', benchmarkSd: 15.33 },
+      rolling: getMultiHorizonRollingData('LARGE_CAP', 0.0),
+      rolling3Y: getRollingMetricsForAssetClass('LARGE_CAP', 3, 0.0),
       holdings: [
         { name: 'HDFC Bank Ltd.', sector: 'Financial Services', weight: 11.50 },
         { name: 'Reliance Industries Ltd.', sector: 'Oil & Gas', weight: 9.20 },
@@ -589,6 +489,38 @@ const BASE_RESEARCH_PROFILES: Record<string, any> = {
         { name: 'Larsen & Toubro Ltd.', sector: 'Construction', weight: 4.30 },
         { name: 'ITC Ltd.', sector: 'FMCG', weight: 3.90 }
       ]
+    },
+    '101979': {
+      code: '101979',
+      name: 'Kotak Credit Risk Fund - Growth',
+      category: 'Credit Risk Debt Fund',
+      assetClass: 'DEBT',
+      amc: 'Kotak Mahindra Mutual Fund',
+      aum: '₹4,850 Cr',
+      ter: '0.98%',
+      manager: 'Deepak Agrawal',
+      inception: '11-May-2010',
+      returns: getTrailingReturnsForAssetClass('DEBT'),
+      risk: getRiskMetricsForAssetClass('DEBT'),
+      rolling: getMultiHorizonRollingData('DEBT', 0.1),
+      rolling3Y: getRollingMetricsForAssetClass('DEBT', 3, 0.1),
+      holdings: getHoldingsForAssetClass('DEBT')
+    },
+    '100377': {
+      code: '100377',
+      name: 'HDFC Liquid Fund - Growth',
+      category: 'Liquid Debt Fund',
+      assetClass: 'OVERNIGHT_LIQUID',
+      amc: 'HDFC Mutual Fund',
+      aum: '₹68,200 Cr',
+      ter: '0.22%',
+      manager: 'Anupam Joshi, Swapnil Jangam',
+      inception: '17-Oct-2000',
+      returns: getTrailingReturnsForAssetClass('OVERNIGHT_LIQUID'),
+      risk: getRiskMetricsForAssetClass('OVERNIGHT_LIQUID'),
+      rolling: getMultiHorizonRollingData('OVERNIGHT_LIQUID', 0.0),
+      rolling3Y: getRollingMetricsForAssetClass('OVERNIGHT_LIQUID', 3, 0.0),
+      holdings: getHoldingsForAssetClass('OVERNIGHT_LIQUID')
     }
   };
 
@@ -747,7 +679,18 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
     onSelectSchemeForOrder(appScheme, orderType);
   };
 
-  const activeRollingData = researchProfiles[selectedScheme]?.rolling3Y;
+  const activeRollingData: RollingReturnMetrics | null = useMemo(() => {
+    const profile = researchProfiles[selectedScheme];
+    if (!profile) return null;
+    if (profile.rolling && profile.rolling[horizonYears]) {
+      return profile.rolling[horizonYears];
+    }
+    if (profile.rolling3Y && horizonYears === 3) {
+      return profile.rolling3Y;
+    }
+    const assetClass = detectAssetClass(profile.name, profile.category);
+    return getRollingMetricsForAssetClass(assetClass, horizonYears);
+  }, [researchProfiles, selectedScheme, horizonYears]);
   const activeRiskData = researchProfiles[riskScheme]?.risk;
 
   // Overlap calculation
@@ -1281,8 +1224,8 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                 <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 font-semibold">
                   BSE: {researchProfiles[selectedScheme]?.bseCode || researchProfiles[selectedScheme]?.code}
                 </span>
-                <span className="text-xs text-[#c5a059] font-medium">
-                  {researchProfiles[selectedScheme]?.category}
+                <span className={`text-xs px-2 py-0.5 rounded border font-medium ${getAssetClassDisplay(detectAssetClass(researchProfiles[selectedScheme]?.name, researchProfiles[selectedScheme]?.category)).tagClass}`}>
+                  {researchProfiles[selectedScheme]?.category || getAssetClassDisplay(detectAssetClass(researchProfiles[selectedScheme]?.name, researchProfiles[selectedScheme]?.category)).label}
                 </span>
               </div>
 
@@ -1342,7 +1285,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
               <div className="text-2xl font-bold text-emerald-400 mt-2">
                 {activeRollingData?.avg}% <span className="text-xs text-slate-400">p.a.</span>
               </div>
-              <div className="text-xs text-slate-500 mt-1">
+              <div className="text-xs text-slate-500 mt-1 truncate" title={`Benchmark: ${activeRollingData?.benchmarkName || 'NIFTY 50 TRI'}`}>
                 Benchmark: {activeRollingData?.benchmarkAvg}% p.a.
               </div>
             </div>
@@ -1352,7 +1295,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
               <div className="text-2xl font-bold text-[#c5a059] mt-2">
                 {activeRollingData?.median}% <span className="text-xs text-slate-400">p.a.</span>
               </div>
-              <div className="text-xs text-slate-500 mt-1">Typical expected 3Y CAGR</div>
+              <div className="text-xs text-slate-500 mt-1">Typical expected {horizonYears}Y CAGR</div>
             </div>
 
             <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-5">
@@ -1360,18 +1303,28 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
               <div className="text-2xl font-bold text-slate-200 mt-2">
                 {activeRollingData?.min}% – {activeRollingData?.max}%
               </div>
-              <div className="text-xs text-slate-500 mt-1">
+              <div className="text-xs text-slate-500 mt-1 truncate" title={`Benchmark: ${activeRollingData?.benchmarkMin}% – ${activeRollingData?.benchmarkMax}%`}>
                 Bench: {activeRollingData?.benchmarkMin}% – {activeRollingData?.benchmarkMax}%
               </div>
             </div>
 
             <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-5">
               <div className="text-xs text-slate-400 uppercase font-semibold">Loss Probability (&lt;0%)</div>
-              <div className="text-2xl font-bold text-emerald-400 mt-2">
+              <div className={`text-2xl font-bold mt-2 ${(activeRollingData?.dist?.neg || 0) === 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
                 {activeRollingData?.dist?.neg}%
               </div>
-              <div className="text-xs text-emerald-500/80 mt-1 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> 100% positive return history
+              <div className="text-xs mt-1 flex items-center gap-1">
+                {(activeRollingData?.dist?.neg || 0) === 0 ? (
+                  <span className="text-emerald-500/80 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>100% positive return history ({horizonYears}Y)</span>
+                  </span>
+                ) : (
+                  <span className="text-amber-400/90 flex items-center gap-1" title="Observed during historical major market corrections">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>{activeRollingData?.dist?.neg}% down-periods in corrections</span>
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -1383,7 +1336,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
               Return Consistency & Probability Distribution ({horizonYears}-Year Horizon)
             </h3>
             <p className="text-xs text-slate-400 mb-6">
-              Percentage of times an investor observed annualized returns in each specific bucket over 1,260 rolling trading windows.
+              Percentage of times an investor observed annualized returns in each specific bucket over rolling trading windows ({horizonYears * 252} trading days per window).
             </p>
 
             <div className="space-y-4">
@@ -1393,7 +1346,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                   <span className="text-red-400 font-bold">{activeRollingData?.dist?.neg}%</span>
                 </div>
                 <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                  <div className="bg-red-500 h-full rounded-full" style={{ width: `${activeRollingData?.dist?.neg}%` }} />
+                  <div className="bg-red-500 h-full rounded-full" style={{ width: `${Math.min(100, activeRollingData?.dist?.neg || 0)}%` }} />
                 </div>
               </div>
 
@@ -1403,17 +1356,17 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                   <span className="text-amber-400 font-bold">{activeRollingData?.dist?.zeroToEight}%</span>
                 </div>
                 <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                  <div className="bg-amber-500 h-full rounded-full" style={{ width: `${activeRollingData?.dist?.zeroToEight}%` }} />
+                  <div className="bg-amber-500 h-full rounded-full" style={{ width: `${Math.min(100, activeRollingData?.dist?.zeroToEight || 0)}%` }} />
                 </div>
               </div>
 
               <div>
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-slate-300 font-medium">8% to 12% (Moderate Equity Returns)</span>
+                  <span className="text-slate-300 font-medium">8% to 12% (Moderate Equity / Yield)</span>
                   <span className="text-blue-400 font-bold">{activeRollingData?.dist?.eightToTwelve}%</span>
                 </div>
                 <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                  <div className="bg-blue-500 h-full rounded-full" style={{ width: `${activeRollingData?.dist?.eightToTwelve}%` }} />
+                  <div className="bg-blue-500 h-full rounded-full" style={{ width: `${Math.min(100, activeRollingData?.dist?.eightToTwelve || 0)}%` }} />
                 </div>
               </div>
 
@@ -1423,7 +1376,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                   <span className="text-teal-400 font-bold">{activeRollingData?.dist?.twelveToFifteen}%</span>
                 </div>
                 <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                  <div className="bg-teal-500 h-full rounded-full" style={{ width: `${activeRollingData?.dist?.twelveToFifteen}%` }} />
+                  <div className="bg-teal-500 h-full rounded-full" style={{ width: `${Math.min(100, activeRollingData?.dist?.twelveToFifteen || 0)}%` }} />
                 </div>
               </div>
 
@@ -1433,7 +1386,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                   <span className="text-emerald-400 font-bold">{activeRollingData?.dist?.aboveFifteen}%</span>
                 </div>
                 <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${activeRollingData?.dist?.aboveFifteen}%` }} />
+                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${Math.min(100, activeRollingData?.dist?.aboveFifteen || 0)}%` }} />
                 </div>
               </div>
             </div>
@@ -1441,8 +1394,16 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
             <div className="mt-6 p-4 rounded-lg bg-[#0b0f19] border border-slate-800 text-xs text-slate-400 flex items-start gap-3">
               <Info className="w-4 h-4 text-[#c5a059] shrink-0 mt-0.5" />
               <div>
-                <strong className="text-slate-200">Advisor Insight:</strong> In{' '}
-                <span className="text-emerald-400 font-semibold">{activeRollingData?.dist?.aboveFifteen}%</span> of historical 3-year periods, investors in {researchProfiles[selectedScheme]?.name} generated compounding returns exceeding 15% p.a., with zero observed periods resulting in capital loss.
+                <strong className="text-slate-200">Advisor Insight ({horizonYears}-Year Horizon):</strong>{' '}
+                {(activeRollingData?.dist?.neg || 0) === 0 ? (
+                  <>
+                    In <span className="text-emerald-400 font-semibold">100%</span> of historical {horizonYears}-year rolling windows, investors in <span className="text-slate-200 font-semibold">{researchProfiles[selectedScheme]?.name}</span> experienced zero capital loss. In <span className="text-emerald-400 font-semibold">{activeRollingData?.dist?.aboveFifteen}%</span> of observed periods, compounding exceeded 15% p.a.
+                  </>
+                ) : (
+                  <>
+                    Over {horizonYears}-year rolling horizons, <span className="text-amber-400 font-semibold">{activeRollingData?.dist?.neg}%</span> of periods experienced temporary negative returns during broader market downturns, while <span className="text-emerald-400 font-semibold">{activeRollingData?.dist?.aboveFifteen}%</span> of periods delivered strong compounding (&gt;15% p.a.). Lengthening investment horizon to 5–7 years historically eliminates capital loss risk.
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -1473,14 +1434,14 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
               </div>
 
               <div className="flex flex-wrap items-baseline gap-2">
-                <div className="text-base font-bold text-white tracking-tight truncate max-w-xl" title={researchProfiles[selectedScheme]?.name}>
-                  {researchProfiles[selectedScheme]?.name || 'Select Scheme'}
+                <div className="text-base font-bold text-white tracking-tight truncate max-w-xl" title={researchProfiles[riskScheme]?.name}>
+                  {researchProfiles[riskScheme]?.name || 'Select Scheme'}
                 </div>
                 <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 font-semibold">
-                  BSE: {researchProfiles[selectedScheme]?.bseCode || researchProfiles[selectedScheme]?.code}
+                  BSE: {researchProfiles[riskScheme]?.bseCode || researchProfiles[riskScheme]?.code}
                 </span>
-                <span className="text-xs text-[#c5a059] font-medium">
-                  {researchProfiles[selectedScheme]?.category}
+                <span className={`text-xs px-2 py-0.5 rounded border font-medium ${getAssetClassDisplay(detectAssetClass(researchProfiles[riskScheme]?.name, researchProfiles[riskScheme]?.category)).tagClass}`}>
+                  {researchProfiles[riskScheme]?.category || getAssetClassDisplay(detectAssetClass(researchProfiles[riskScheme]?.name, researchProfiles[riskScheme]?.category)).label}
                 </span>
               </div>
 
@@ -1512,7 +1473,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
             </div>
 
             <div className="text-xs text-slate-400 lg:text-right shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-800 space-y-0.5">
-              <div>Benchmark: <span className="text-slate-200 font-semibold">NIFTY 50 TRI</span></div>
+              <div>Benchmark: <span className="text-slate-200 font-semibold">{activeRiskData?.benchmarkName || 'NIFTY 50 TRI'}</span></div>
               <div>Risk-Free Rate: <span className="text-slate-200 font-semibold">6.50% (RBI 91-Day T-Bill)</span></div>
               <div>Horizon: <span className="text-[#c5a059] font-semibold">3 Years (784 Trading Days)</span></div>
             </div>
@@ -1585,7 +1546,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                 {activeRiskData?.sd}%
               </div>
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                Annualized dispersion of daily returns around the average. Benchmark standard deviation is 15.33%.
+                Annualized dispersion of daily returns around the average. Benchmark standard deviation is {activeRiskData?.benchmarkSd || 15.33}%.
               </p>
             </div>
 
@@ -1599,7 +1560,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                 {activeRiskData?.r2}
               </div>
               <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                {Math.round((activeRiskData?.r2 || 0) * 100)}% of fund movements correlate to Nifty 50 TRI; the remainder reflects unique active positioning.
+                {Math.round((activeRiskData?.r2 || 0) * 100)}% of fund movements correlate to {activeRiskData?.benchmarkName || 'NIFTY 50 TRI'}; the remainder reflects unique active positioning.
               </p>
             </div>
           </div>
