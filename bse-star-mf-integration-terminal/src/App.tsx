@@ -132,7 +132,7 @@ export default function App() {
 
   // Selected scheme for prefilling Order Terminal
   const [prefilledScheme, setPrefilledScheme] = useState<Scheme | null>(null);
-  const [prefilledOrderType, setPrefilledOrderType] = useState<'LUMPSUM' | 'SIP' | null>(null);
+  const [prefilledOrderType, setPrefilledOrderType] = useState<'LUMPSUM' | 'SIP' | 'STP' | null>(null);
 
   // Logs
   const [logs, setLogs] = useState<ApiLog[]>([]);
@@ -271,14 +271,14 @@ export default function App() {
     showToast(`Mandate ${newMandate.mandateId} registered with NPCI / BSE`);
   };
 
-  const handleSelectSchemeForOrder = (scheme: Scheme, type: 'LUMPSUM' | 'SIP') => {
+  const handleSelectSchemeForOrder = (scheme: Scheme, type: 'LUMPSUM' | 'SIP' | 'STP') => {
     setSchemes((prev) =>
       prev.some((s) => s.schemeCode === scheme.schemeCode) ? prev : [scheme, ...prev]
     );
     setPrefilledScheme(scheme);
     setPrefilledOrderType(type);
     setCurrentTab('orders');
-    showToast(`Loaded ${scheme.schemeName} (${scheme.schemeCode}) into Order Engine`);
+    showToast(`Loaded ${scheme.schemeName} (${scheme.schemeCode}) into Order Engine [${type}]`);
   };
 
   const handleTradeWithClient = (client: ClientUcc) => {
@@ -339,7 +339,12 @@ export default function App() {
         )}
 
         {currentTab === 'proposals' && <ProposalCartView />}
-        {currentTab === 'research' && <ResearchView />}
+        {currentTab === 'research' && (
+          <ResearchView
+            liveBseStatus={liveBseStatus}
+            onSelectSchemeForOrder={handleSelectSchemeForOrder}
+          />
+        )}
         {currentTab === 'calculators' && <CalculatorsView />}
         {currentTab === 'portfolio' && <PortfolioTaxView />}
 

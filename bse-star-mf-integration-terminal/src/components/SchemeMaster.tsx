@@ -24,7 +24,7 @@ import {
 interface SchemeMasterProps {
   schemes: Scheme[];
   liveBseStatus?: LiveBseStatus | null;
-  onSelectSchemeForOrder: (scheme: Scheme, type: 'LUMPSUM' | 'SIP') => void;
+  onSelectSchemeForOrder: (scheme: Scheme, type: 'LUMPSUM' | 'SIP' | 'STP') => void;
 }
 
 type CatalogMode = 'LIVE_SCHEMES' | 'LIVE_NAV' | 'SANDBOX';
@@ -639,7 +639,7 @@ export const SchemeMaster: React.FC<SchemeMasterProps> = ({
                     </div>
 
                     {/* Order CTAs */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <button
                         type="button"
                         onClick={() =>
@@ -648,7 +648,7 @@ export const SchemeMaster: React.FC<SchemeMasterProps> = ({
                             'LUMPSUM'
                           )
                         }
-                        className="px-3.5 py-2 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-md transition-colors whitespace-nowrap cursor-pointer"
+                        className="px-3 py-2 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-md transition-colors whitespace-nowrap cursor-pointer shadow-xs"
                       >
                         Buy Lumpsum
                       </button>
@@ -660,9 +660,22 @@ export const SchemeMaster: React.FC<SchemeMasterProps> = ({
                             'SIP'
                           )
                         }
-                        className="px-3.5 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md transition-colors whitespace-nowrap cursor-pointer"
+                        className="px-3 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md transition-colors whitespace-nowrap cursor-pointer"
                       >
                         Start XSIP
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onSelectSchemeForOrder(
+                            liveBseSchemeToAppScheme(rec, inlineNav?.nav, inlineNav?.navDate),
+                            'STP'
+                          )
+                        }
+                        className="px-3 py-2 text-xs font-medium text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/30 rounded-md transition-colors whitespace-nowrap cursor-pointer"
+                        title="Setup Systematic Transfer Plan (STP) within same AMC"
+                      >
+                        Setup STP
                       </button>
                     </div>
                   </div>
@@ -824,20 +837,28 @@ export const SchemeMaster: React.FC<SchemeMasterProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => onSelectSchemeForOrder(scheme, 'LUMPSUM')}
-                    className="px-3.5 py-2 text-xs font-semibold text-slate-900 bg-amber-400 hover:bg-amber-300 rounded-md transition-colors whitespace-nowrap cursor-pointer shadow-xs"
+                    className="px-3 py-2 text-xs font-semibold text-slate-900 bg-amber-400 hover:bg-amber-300 rounded-md transition-colors whitespace-nowrap cursor-pointer shadow-xs"
                   >
                     Buy Lumpsum
                   </button>
                   <button
                     type="button"
                     onClick={() => onSelectSchemeForOrder(scheme, 'SIP')}
-                    className="px-3.5 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md transition-colors whitespace-nowrap cursor-pointer"
+                    className="px-3 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md transition-colors whitespace-nowrap cursor-pointer"
                   >
                     Start XSIP
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelectSchemeForOrder(scheme, 'STP')}
+                    className="px-3 py-2 text-xs font-medium text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/30 rounded-md transition-colors whitespace-nowrap cursor-pointer"
+                    title="Setup Systematic Transfer Plan (STP) within same AMC"
+                  >
+                    Setup STP
                   </button>
                 </div>
               </div>

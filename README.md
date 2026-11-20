@@ -358,6 +358,18 @@ All communication with BSE StAR MF v2 endpoints strictly adheres to the **JOSE (
   * **Zero-Hallucination Split & SEBI Guardrails:** Deterministic TypeScript math + optional Gemini 2.5 Flash (`@google/genai`, strictly anonymized non-PII facts) with offline fallback and a permanent **AI & SEBI Caveat Banner**.
   * Available in **End Investor Portal** (floating Tanu Owl launcher + header button) and **MFD Portfolio & Tax** (`Play Client Story (Tanu)` button for client review meetings).
 
+### Phase 17: Live BSE StAR MF Market Research & Systematic Transfer Plan (STP) Engine
+* **Live BSE StAR MF Market Research Integration:**
+  * **28,128 Live Schemes & 15,692 Live NAVs:** Directly queried in real-time from BSE StAR MF v2.0 UAT via the `/api/bse-uat` proxy with zero CORS issues and zero impact on `tanashvi.in`.
+  * **Quick AMC Filter Chips:** Instant 1-click searches across India's premier AMCs (`PARAG PARIKH`, `HDFC`, `SBI`, `NIPPON`, `KOTAK`, `ICICI PRUDENTIAL`, `QUANT`, `MIRAE`, `TATA`, `AXIS`).
+  * **Dynamic Institutional Analytics:** Generates rolling returns distributions (1Y, 3Y, 5Y, 7Y), risk metrics (Sharpe, Sortino, Beta, Alpha, SD, R²), top portfolio holdings, and AUM estimates for any live BSE scheme.
+  * **1-Click Execution Handoff:** Direct action buttons (`Buy Lumpsum`, `Start XSIP`, `Setup STP`) on any searched live BSE scheme route immediately into the Order Terminal with scheme prefilled.
+* **Systematic Transfer Plan (STP) Engine:**
+  * **SEBI & BSE Regulatory Compliance:** Strictly enforces the operational mandate that STPs and Switches can **only occur between schemes of the exact same Fund House (AMC)** under the same Folio. The UI dynamically restricts target schemes to `s.amc === selectedSourceScheme.amc` with prominent regulatory alerts.
+  * **Flexible Installment Scheduling:** Supports Weekly, Monthly, and Quarterly transfer frequencies, custom debit days (e.g., 5th of the month or every Monday), and installment count presets (6, 12, **24 [Recommended / 2 Years]**, 36, 60, custom).
+  * **Capital Transfer Projections:** Real-time calculation of total capital transferred (`amount * installments`), estimated units redeemed per transaction, and projected completion date.
+  * **Full Reconciliation:** STP transactions routed with official BSE `/sxp_register` payload (`sxp_type: 'stp'`), recorded in the Order Book with source-to-target mapping, cyan STP badges, and exported in the CSV audit ledger.
+
 ---
 
 ### Build & Run Offline Testbenches

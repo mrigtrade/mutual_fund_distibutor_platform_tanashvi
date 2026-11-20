@@ -264,8 +264,109 @@ export class BseApiService {
   }
 
   /**
-   * Register XSIP (SIP with e-Mandate)
+   * Register STP (Systematic Transfer Plan: Source Scheme -> Target Scheme within same AMC)
    */
+  static async registerStp(
+    params: {
+      client: ClientUcc;
+      sourceScheme: Scheme;
+      targetScheme: Scheme;
+      installmentAmount: number;
+      frequency: 'MONTHLY' | 'WEEKLY' | 'QUARTERLY';
+      startDate: string;
+      endDate?: string;
+      installments: number;
+      transferDay?: number;
+      dpType: 'PHYSICAL' | 'DEMAT';
+      firstOrderToday: boolean;
+      subBrokerCode?: string;
+      euin?: string;
+    },
+    credentials: BseCredentials
+  ): Promise<BseOrder> {
+    await new Promise((resolve) => setTimeout(resolve, 550));
+
+    if (params.sourceScheme.amc !== params.targetScheme.amc) {
+      throw new Error(
+        `Regulatory Violation: STP is strictly prohibited across different AMCs. Source AMC "${params.sourceScheme.amc}" does not match Target AMC "${params.targetScheme.amc}".`
+      );
+    }
+
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const randSeq = Math.floor(10000 + Math.random() * 90000);
+    const bseOrderNo = `BBO-STP-${dateStr}-${randSeq}`;
+    const internalOrderId = `ORD-STP-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    const subBroker = params.subBrokerCode || params.client.subBrokerCode || '';
+    const euin = params.euin || params.client.euin || '';
+    const totalTransfer = params.installmentAmount * params.installments;
+
+    const bseOrder: BseOrder = {
+      orderId: internalOrderId,
+      bseOrderNo,
+      clientCode: params.client.clientCode,
+      clientName: params.client.fullName,
+      schemeCode: params.sourceScheme.schemeCode,
+      schemeName: params.sourceScheme.schemeName,
+      targetSchemeCode: params.targetScheme.schemeCode,
+      targetSchemeName: params.targetScheme.schemeName,
+      orderType: 'STP',
+      amount: params.installmentAmount,
+      totalTransferAmount: totalTransfer,
+      stpFrequency: params.frequency,
+      stpStartDate: params.startDate,
+      stpEndDate: params.endDate,
+      stpInstallments: params.installments,
+      dpType: params.dpType,
+      status: 'PLACED',
+      paymentMode: 'MANDATE',
+      subBrokerCode: subBroker || undefined,
+      euin: euin || undefined,
+      euinFlag: euin ? 'Y' : 'N',
+      timestamp: new Date().toISOString(),
+      remarks: `BSE StAR MF STP: Transfer ₹${params.installmentAmount.toLocaleString('en-IN')} ${params.frequency.toLowerCase()} for ${params.installments} installments from [${params.sourceScheme.schemeName}] into [${params.targetScheme.schemeName}] (Total: ₹${totalTransfer.toLocaleString('en-IN')})`
+    };
+
+    // Log official BSE StAR MF /sxp_register SOAP / REST request with sxp_type = 'stp'
+    this.addLog({
+      endpoint: '/StarMFWebService/STPOrderEntry',
+      service: 'STP_REGISTRATION',
+      requestPayload: JSON.stringify({
+        MemberCode: credentials.memberId,
+        SxpType: 'stp',
+        SubBrokerCode: subBroker,
+        EUIN: euin,
+        EUINFlag: euin ? 'Y' : 'N',
+        ClientCode: params.client.clientCode,
+        SrcSchemeCode: params.sourceScheme.schemeCode,
+        DestSchemeCode: params.targetScheme.schemeCode,
+        AMCCode: params.sourceScheme.amc,
+        Frequency: params.frequency,
+        StartDate: params.startDate,
+        EndDate: params.endDate || '2099-12-31',
+        InstallmentAmount: params.installmentAmount,
+        TotalInstallments: params.installments,
+        TotalTransferTarget: totalTransfer,
+        FirstOrderToday: params.firstOrderToday ? 'Y' : 'N'
+      }, null, 2),
+      responsePayload: JSON.stringify({
+        STPRegNo: bseOrderNo,
+        SxpType: 'STP',
+        SourceScheme: params.sourceScheme.schemeCode,
+        TargetScheme: params.targetScheme.schemeCode,
+        AMCVerified: params.sourceScheme.amc,
+        Status: 'ACTIVE_REGISTERED',
+        NextTransferDate: params.startDate,
+        TotalInstallmentsScheduled: params.installments,
+        Message: `STP registered successfully for ${params.installments} ${params.frequency.toLowerCase()} installments`
+      }, null, 2),
+      statusCode: 200,
+      latencyMs: 550,
+      status: 'SUCCESS'
+    });
+
+    return bseOrder;
+  }
   static async registerXsip(
     params: {
       client: ClientUcc;

@@ -159,6 +159,8 @@ export type OrderType =
   | 'ADDITIONAL_PURCHASE'
   | 'SIP'
   | 'XSIP'
+  | 'STP'
+  | 'SWP'
   | 'REDEMPTION'
   | 'SWITCH';
 
@@ -192,6 +194,11 @@ export interface BseOrder {
   sipFrequency?: 'MONTHLY' | 'WEEKLY' | 'QUARTERLY';
   sipInstallments?: number;
   sipStartDate?: string;
+  stpFrequency?: 'MONTHLY' | 'WEEKLY' | 'QUARTERLY';
+  stpInstallments?: number;
+  stpStartDate?: string;
+  stpEndDate?: string;
+  totalTransferAmount?: number;
   subBrokerCode?: string; // BSE StAR MF SubBrokerCode
   euin?: string; // BSE StAR MF EUIN
   euinFlag?: 'Y' | 'N'; // BSE StAR MF EUIN Declaration Flag

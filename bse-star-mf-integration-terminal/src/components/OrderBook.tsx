@@ -51,7 +51,7 @@ export const OrderBook: React.FC<OrderBookProps> = ({
   };
 
   const exportCsv = () => {
-    const headers = ['Order ID', 'BSE Order No', 'Client Code', 'Client Name', 'Sub-Broker Code', 'EUIN', 'Scheme', 'Type', 'Amount', 'Status', 'Timestamp'];
+    const headers = ['Order ID', 'BSE Order No', 'Client Code', 'Client Name', 'Sub-Broker Code', 'EUIN', 'Scheme', 'Target Scheme', 'Type', 'Amount', 'Total Transfer Target', 'Status', 'Timestamp'];
     const rows = filteredOrders.map(o => [
       o.orderId,
       o.bseOrderNo,
@@ -60,8 +60,10 @@ export const OrderBook: React.FC<OrderBookProps> = ({
       o.subBrokerCode || 'DIRECT',
       o.euin || 'N/A',
       `"${o.schemeName}"`,
+      `"${o.targetSchemeName || ''}"`,
       o.orderType,
       o.amount,
+      o.totalTransferAmount || o.amount,
       o.status,
       o.timestamp
     ]);
@@ -186,38 +188,70 @@ export const OrderBook: React.FC<OrderBookProps> = ({
                     )}
                   </td>
                   <td className="py-3 px-4">
-                    <div className="font-sans text-slate-200 truncate max-w-[200px]" title={order.schemeName}>
-                      {order.schemeName}
+                    <div className="font-sans text-slate-200 truncate max-w-[220px]" title={order.schemeName}>
+                      {order.orderType === 'STP' && order.targetSchemeName ? (
+                        <div className="space-y-0.5">
+                          <div className="text-slate-300 font-medium truncate">
+                            <span className="text-amber-400/90 font-mono text-[11px] mr-1">SRC:</span>
+                            {order.schemeName}
+                          </div>
+                          <div className="text-emerald-300 font-medium truncate flex items-center gap-1">
+                            <span className="text-emerald-400 font-mono text-[11px]">DEST:</span>
+                            {order.targetSchemeName}
+                          </div>
+                        </div>
+                      ) : (
+                        order.schemeName
+                      )}
                     </div>
-                    <div className="text-[11px] text-slate-400 font-mono">
-                      {order.orderType} {order.sipFrequency ? `(${order.sipFrequency})` : ''}
+                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      {order.orderType === 'STP' ? (
+                        <span className="text-cyan-300 font-semibold">
+                          STP · {order.stpInstallments || 24}x {order.stpFrequency?.toLowerCase() || 'monthly'} transfers
+                        </span>
+                      ) : (
+                        `${order.orderType} ${order.sipFrequency ? `(${order.sipFrequency})` : ''}`
+                      )}
                     </div>
                   </td>
                   <td className="py-3 px-4 text-right">
                     <div className="font-bold text-white tabular-nums">
                       ₹{order.amount.toLocaleString('en-IN')}
+                      {order.orderType === 'STP' && (
+                        <span className="text-[10px] text-slate-400 font-normal ml-0.5">/txn</span>
+                      )}
                     </div>
-                    {order.units && (
+                    {order.orderType === 'STP' && order.totalTransferAmount ? (
+                      <div className="text-[11px] text-emerald-400 font-mono tabular-nums font-semibold">
+                        Total: ₹{order.totalTransferAmount.toLocaleString('en-IN')}
+                      </div>
+                    ) : order.units ? (
                       <div className="text-[11px] text-slate-400 tabular-nums">
                         {order.units} Units
                       </div>
-                    )}
+                    ) : null}
                   </td>
                   <td className="py-3 px-4 font-sans">
-                    <div className="text-slate-300">{order.paymentMode}</div>
-                    <div className="text-[10px] text-slate-500 font-mono">{order.dpType}</div>
+                    <div className="text-slate-300">
+                      {order.orderType === 'STP' ? 'Folio Transfer' : order.paymentMode}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono">
+                      {order.orderType === 'STP' ? 'Internal AMC STP' : order.dpType}
+                    </div>
                   </td>
                   <td className="py-3 px-4 font-sans">
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold ${
-                        order.status === 'ALLOTTED'
+                        order.orderType === 'STP'
+                          ? 'bg-cyan-950/60 text-cyan-300 border border-cyan-500/30'
+                          : order.status === 'ALLOTTED'
                           ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30'
                           : order.status === 'AWAITING_PAYMENT'
                           ? 'bg-amber-950/60 text-amber-300 border border-amber-500/30'
                           : 'bg-blue-950/60 text-blue-300 border border-blue-500/30'
                       }`}
                     >
-                      {order.status}
+                      {order.orderType === 'STP' ? 'STP REGISTERED' : order.status}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right">
